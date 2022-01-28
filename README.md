@@ -1,10 +1,16 @@
 # orderly2
 
+`orderly` has been useful for a number of projects in the centre but it is time to think about improvements based on what we have learnt.
+
+> The focus of the core of orderly/orderly2 should be the ease of sharing and collaborative reuse of persistent artefacts.
+
+This is a little less and a little more ambitious than the goal of `orderly`.
+
 An extensible metadata format that we will use for the data format.  The idea being that there are some extensions that are project-specific and others that are engine-specific.  Core metadata must be provided by all engines for all projects.
 
 ## What is the issue that orderly solves well?
 
-We imagined orderly as a reproducible/trustable reporting framework, then morphed it into something else.  It does the reproducible reporting OK, but it's the workflow aspect that is more useful really.
+We imagined orderly as a reproducible/trustable reporting framework, then morphed it into something else.  It does the reproducible reporting OK, but it's the workflow aspect that is more useful really, and in that it's not even the "DAG of separable bits of work" so much as a "teamwork over a complex piece of work" type thing.
 
 Have a group of researchers working on a shared source tree, able to share outputs of computational work that would be time-consuming to rerun and have high confidence that they are looking at the same thing as each other.
 
@@ -17,6 +23,8 @@ There are two parts to this:
 
 ### Namespacing and provenance
 
+(see also the section "Sources and trust" below)
+
 We have some missing details in how we track where things have come from:
 
 * where they were computed
@@ -27,9 +35,11 @@ This is an issue with doing things like a "partial pull" which we hacked into or
 
 **Computation**: Each compute node can have a URL which we include here.  That could derived from the hostname, or set in a configuration.  In an ideal world this would let us know that something was run on the cluster `mrc78.dide.ic.ac.uk` or on some trusted orderly server `montagu.vaccineimpact.org` or on someones desktop `rich.local`.  This corresponds to a pointer to where the calculation happened, but not where it could necessarily be pulled from.
 
-**Canonical location**: We already have the concept of relocatable reports with orderly bundles, and we use a more adhoc system with the cluster for the rtm project.  Having a good idea of a canonical location is important because then if we don't download the full tree we know that we can get that tree from its canonical location.  This corresponds to a persistent location for the resource (i.e., a URL!) but not necessarily where it was computed, nor where an individual pulled it from.
+**Persistant location**: We already have the concept of relocatable reports with orderly bundles, and we use a more adhoc system with the cluster for the rtm project.  Having a good idea of a canonical location is important because then if we don't download the full tree we know that we can get that tree from its canonical location.  This corresponds to a persistent location for the resource (i.e., a URL!) but not necessarily where it was computed, nor where an individual pulled it from, but where it could be fetched from in future.  This could be implemented if we import an archive into a repository that is willing to share it in future.  We could also perhaps discover this as part of fetching metadata from another archive.  The idea here is that if we pulled part of a tree we'd like to pull metadata that indicates where we might pull the full archives that correspond to other components of that tree.  Any location that has a full tree may be a persistant location, but not all will be.
 
 **Fetched from**: If you pull a task into one repo on your machine, then from there pull it into another, this could be tracked.  Alternatively we could ignore this information and retain only the canonical location.  This could be neither the location that it was computed on, nor the canonical location.
+
+The second and third of these should not be baked into the metadata.
 
 The location should be more than just the hostname as that will not work when we work out how to host more than one OrderlyWeb instance on a single node (in that case we might have `example.com/core` and `example.com/hiv/transmission` as two different locations).  Non OW transport might also be supported here...
 
@@ -54,6 +64,11 @@ In orderly this is largely restricted to:
 * rewriting the `orderly.yml` to update dependencies
 * dropping some fields in `orderly.yml`
 * pruning dependency trees to move dependencies into being resources (this one by far the most complicated)
+
+This will typically be a one-off process, though we've also done this with follow-on exports (e.g., at revision).  We might or might not want to create a persistant link between repos:
+
+* we'd want to in the case where we're importing code as a project evolves
+* we'd want not to in the case of exporting a public subset out of a private monorepo
 
 ### Hashing
 
@@ -103,6 +118,7 @@ This is fine generally, but has some drawbacks:
 * it behaves very poorly on a network drive, and is a block to parallel operation (where you can get locking) or just any operation from Linux (even in series)
 * it throws baffling errors to users (e.g., FK constraint violation) instead of something actionable
 * it's very slow on windows (most orderly tests skipped on CRAN due to this taking 20x longer than on Linux)
+* We've ended up sharing this between orderly and OW which is not ideal as we don't really know what is being depended on.
 
 All we wanted from this is some index, but we have a fairly simple structure that can be read fairly quickly on an as-need basis (particularly with caching/serialisation into a native format) without hitting locks or contention.
 
@@ -113,6 +129,8 @@ This is only because we've never implemented it, but something to consider a bit
 * this needs to be done out-of-tree as to avoid accidental modification
 * things like DB connections, secrets, environment vars might have changed and will be hard to replicate
 * we might want to allow refreshing of _some_ inputs (e.g., same everything but update this one dependency please)
+* We might want to rerun locally or in the original place
+* Rerunning might be exploratory (let me recreate the computational environment and poke about) or it might result in a report that would be persistant
 
 ### Flexible dependencies and artefacts
 
@@ -121,6 +139,21 @@ This has been requested frequently and I've always opposed it.  However, from th
 So for example, we might want to depend on some set of reports matching a pattern (e.g., pull in one per country for some set of countries specified when running the report).  Or we might want to produce some artefacts only when a particular parameter is set.
 
 The reason to avoid this is that then there's too much logic in the tool that is just running the analysis, requiring another level of orchestration to control.  To a degree we suffer here with the query dependencies as these are hard to debug.
+
+This would probably require a little extra metadata to be added by the engine to record what queries we ran, but would not affect the general metadata as we'd always write out what they resolve to.
+
+Use cases:
+
+* depend on some flexible set of upstream task:
+  - if a parameter is 'x' pull in task `A` otherwise `B`
+  - pull in dependencies from the script itself (`orderly2::orderly_depend("other", "id", "path", ...)`)
+  - depend on some matching set of reports (e.g., all reports from date X expanded over country)
+  - pull in all files found from a report, matching some path/pattern
+* output a flexible set of artefacts
+  - Save everything in a directory (e.g., `figures/*.png`) similar to how we do directory resources at present
+  - Mark resources in the script itself (so `orderly2::orderly_resource("path.png")`
+
+These would all be implemented in the engine (and the dynamic ones require that there's a pretty strong concept of "running report"), with the final fully resolved information saved out into the final metadata.
 
 ### Integration with other tools
 
@@ -131,3 +164,44 @@ For example, a series of reports could be run as a [CWL](https://www.commonwl.or
 Many of these have fallen apart over time (e.g, the ironically named [Workflow 4 Ever](http://wf4ever.github.io/ro/) project)
 
 The focus of orderly/orderly2 should be the ease of *sharing and collaborative reuse* of persistent artefacts.
+
+## Future issues to deal with
+
+### Sources and trust
+
+This does not mean "trust" in the "would I let it come in here" meaning but the "do I take this as an authoritative copy" sense.  If you trust a source you trust everything in it, including things it has fetched from.  This builds on ideas in the [orderly patterns vignette](https://www.vaccineimpact.org/orderly/articles/patterns.html).  There's considerable prior work in this space, and terminology we will want to align with [e.g.](https://twitter.com/seldo/status/1486563446099300359/photo/1).
+
+Our previous idea of draft/archive mixes two things
+
+* We want to be able to some *development locally* creating *untrusted* reports that should be excluded in some situations and included in others.
+* We also use this as a *staging location* when running reports (in both the trusted and untrusted settings).
+
+To improve this:
+
+* So if we have a process of staging -> archive that's the second part of this
+* On run we should be able to filter by trust level (perhaps just untrusted/trusted but if we had multiple trust levels?) and mark the output with the lowest level of trust that we have among sources
+* Trust level is configured per instance (so I clone the source repo, say: "here is my upstream source list, with trust levels assigned")
+
+**Example 1 - centralised**
+
+* single canonical source of files (https://orderly.example.org)
+* reports are run on the the server (so runner is the same as the source)
+* users all agree that we trust this source
+* pulling from a source might pull recursively, or might pull just one report
+* if we pull just one, then we leave a pointer to the canonical source so that later on it could be easily fetched (the use case here would be filling in a repository or fraction of a repository)
+
+**Example 2 - outsourced computation**
+
+* computationally heavy work run on an HPC system
+* imported into a distribution server, and marked as trusted at this point as ingest is restricted
+* users download from the server and trust the output
+
+**Example 3 - hierarchical repositories**
+
+* central data server runs reports that are used and trusted by several groups
+* secondary server pulls data from the central server (and trusts) it, runs downstream reports that use it
+* there are multiple of these secondary servers, and none of them necessarily trust each other
+
+## Migration plan
+
+Come up with a metadata format and some simple tooling to manipulate them, then reimplement orderly on top of that.
