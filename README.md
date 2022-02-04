@@ -204,4 +204,14 @@ To improve this:
 
 ## Migration plan
 
-Come up with a metadata format and some simple tooling to manipulate them, then reimplement orderly on top of that.
+Come up with a metadata format and some simple tooling to manipulate them, then reimplement orderly on top of that.  This will be done at first in the package `outpack` and then we'll expand that to work with another language and/or engine.
+
+## Prior work
+
+Since we started orderly in 2017, what other attempts have been made to solve this problem?
+
+* https://recipy.readthedocs.io/en/latest/user_manual.html
+* https://sumatra.readthedocs.io/en/latest/
+* https://handbook.datalad.org/
+* https://mlflow.org/docs/latest/tracking.html
+* https://github.com/minerva-ml/steppy
