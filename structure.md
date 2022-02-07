@@ -8,65 +8,120 @@ Like with orderly, we will strongly advocate not adding outpack files to git; th
 
 Our metadata store will be in `.outpack` and no file here is user editable.  The primary thing that this store contains is information about packets that might (or might not) be found within the archive.
 
-```
-.outpack/
-  metadata/
-    <location-id>/
-       <id>/
-         metadata.json
-```
-
-This means that the packet name can be anything really (including containing non-path-safe characters) but it will make some operations quite tedious, for example:
-
-* what is the full set of packet names?
-* what is the most recent copy of packet name X?
-
-The first of these requires reading through the entire set of json files, and the latter does so in the worst case (packet name does not exist, or is found in the earliest packet).  That suggests that we need some local index over these.  This could be done per session or something shared, depending on concurrency issues.
-
-It's not clear at all if we should put things as
+Because an id must resolve to a single packet, we keep it all in a single directory `metadata`; implementations will build an index over this for efficient querying (it is not expected that the json files would be scanned through regularly)
 
 ```
-       <id>/
-         metadata.json
+<root>
+  .outpack/
+    metadata/
+      <id>.json
 ```
 
-or
+This has the slightly unfortunate property that we need to some string manipulation, but the canonical name for the id is contained within the file (an alternative would be to use the hash as the filename, but that feels more annoying).
+
+## Locations
+
+Every location has a concept of the last time that it was updated, in UTC.  This allows us to build a log.  So if we last queried a remote at `t0` we can ask it for new entries imported since then (even if these were imports of older packets) and it should be able to tell us.
+
+To support this we need to hold some information about when we imported any bit of metadata.
 
 ```
-       <id>.json
+<root>
+  .outpack/
+    location/
+      <location-id>/
+        <id>.json
 ```
 
-The former allows more easy addition of associated files (e.g., some partial processing to grab a minimal subset of metadata for an index, or a signature file etc), but has a weird redundancy `metadata/<location-id>/<id>/metadata.json`
+with this file containing simply the time that we downloaded the data, and the hash of the data.
 
-The latter is simpler and less redundant but requires a bit of path manipulation (e.g., finding all ids requires that we string remove `.json$`) and might be less future-proof.
+We can then find from these (by reading every one) when the last time that we pulled data from that location is, and can pass that to the location when querying.
 
-In any case, we end up with one id per packet per location.
+## Signatures
 
-An alternative location, which might be a bit easier to work with:
+*I'm less sure about this, and don't think we'll implement it for the MVP, but something worth considering, I think*
+
+One thing that would help with trustability is if packets were signed by a system.  Then you could use that to decide if you wanted to include them.  This would be fairly decoupled from locations.
+
+There are many places where a packet might be run:
+
+* On someone's machine, on a messy session with globals and packages installed from anywhere at all
+* On a HPC, perhaps where the job is manually distributed across nodes before being finished off, but we're still confident that it represents something reliable
+* On a trusted server, triggered by an automatic run
+
+We could sign these immediately after running (would make sense in the second and third case), or on import (so a distributing server may sign packets that they distribute to vouch for them).
+
+To store these we can use
 
 ```
-.outpack/
-  metadata/
-    <id>/
-      metadata.json
-  locations/
-    <location-id>/
-      contents/
-        <X>
+<root>
+  .outpack
+    signatures/
+      <pubkey>/
+        <id>.json
 ```
 
-Where would decide on `<X>` to be one of
+Where this time the json includes the hash algorithm used and the signature content.
 
-* empty file with an id
-* a symlink to the `metadata/<id>` directory
+Validating the packet would then look like:
 
-This gets a bit weird if we have signing, because who is doing the signing?  If we sign by creator only then we don't really have a problem but distributing keys is quite dull.  If we sign by location (so a location imports a packet from somewhere else and signs that metadata in their local storage), then we should track signatures by location.
+* verify that the file `<root>/.outpack/metadata/<id.json>` using the signature `<root>/.outpack/signatures/<pubkey>/<id>.json` and some public key that you have previously distributed
+* verify all files in `<root>/archive/<name>/<id>` using the hashes present in the metadata file
 
-Some filesytems don't respond that well to having a billion files dumped into one folder (ext2/ext3 are bad at this, among others).  We could shard the files a bit (as git does) with the added complication of having to loop over a set of directories to get a final list of ids.
+## Index
 
-## Location metadata
+Using these json files directly would be quite inefficient, so it'll make sense to build an index.  We assume that each engine will create its own index and not bother using anything elses.
 
-# Workflow
+Ideally an index will be multiprocess safe, and so not suffer corruption if two processes try to update it at once.  In general, index-writing functions should be fairly rare though, even if index-updating functions are common as it is not necessary to write every change back to disk for long running processes.
+
+An example might look like:
+
+```
+<root>
+  .outpack
+    orderly/
+      index/
+        core.rds   <-- stripped down index of name/id/parameters for query
+        full.rds   <-- full index over all queriable metadata?
+```
+
+## Archive
+
+We'll also want copies of some packets actually downloaded to work with (otherwise we can't use them on-demand!).  In orderly we put these all under `archive` and I think that's a reasonable first cut.
+
+The structure there should be user-friendly (for searching through) so keeping things as before
+
+```
+<root>
+  archive/
+    <name>/
+      <id>/
+```
+
+Unlike orderly `<name>` here could contain subdirectories.  If we allow renaming on import (see below) it could be different to the `name` field in the json
+
+There's an open question as to if it makes sense to include the metadata here too.
+
+* **Pros**
+  * if we downloaded a zipped copy of the directory we'd have everything
+  * it would act as a manifest for any directory
+* **Cons**
+  * if one copy is edited we need to verify
+  * it makes it less obvious who is tracking the source of truth
+
+There's no reason why new trees could not be built, so we might not want to limit to a single `archive` directory.  That could be confusing, but I've definitely cloned orderly repotories elsewhere to build a single consistent archive (e.g., download a copy of data/fits and all its dependencies).
+
+To support this we need some per-user configuration of additional archive trees. To allow this extension in future, we'd just need to make sure that `archive` does not get too heavily hardcoded everywhere
+
+## Local copy
+
+In orderly we have a "`draft`" directory which is very useful.  Originally the idea was that people would commit things from their draft to their archive but that became quite annoying, and so we have `use_draft = "newer"` which is basically "Use my untrusted stuff if it's newer"
+
+In some ways this is a bit like the multiple archive trees idea above.
+
+When an local report is created we put the metadata into `<root>/.outpack/metadata/local/<id>.json`, with the "local" name being special perhaps.  We will need a little maintenance trick to clear out of stale things here as users should be free to delete local packets as they feel free.
+
+# Interactions
 
 ## Importing a packet
 
@@ -120,17 +175,17 @@ Regardless, the concept of renaming introduces the possibility that one "name" m
 
 ## Sending a packet from a location
 
-As above, but from the perspective of the location.  Which packets are we able to send?  Everything we trust: that will the the union over all trusted locations.
+As above, but from the perspective of the location.  Which packets are we able to send?  Everything we trust: that will the the union over all trusted locations.  So part of the configuration of a server would include which locations we're happy to forward.
+
+For less smart locations that's a bit harder - something here like the dropbox/sharepoint locations that just distribute files.  Here, I think we're ok in that these locations don't try and distinguish between locations?
+
+In some ways this brings us towards the git "bare" checkout - a copy on dropbox probably contains the metadata at the top level (rather than in dot directories) and as we only interact with it via the import/export commands (rather than the full set of outpack commands)
 
 ## Locally running
 
 We'll need the same concept in orderly of a workspace that things are run in; unlike orderly there's no reason why things might not typically be run in the (equivalent of the) `src/` directory, which would lend itself to simpler but less reliable workflows.
 
 If we always have a special location `local` we can store local metadata that has been saved (equivalent of orderly's commit).  We do not save metadata for unsuccessful runs in the same place though.
-
-## Server versions
-
-# Interactions
 
 ## Queries
 
@@ -169,7 +224,20 @@ See above about notes on renaming; something may be needed here too
 
 Would we ever want to do this?  We could delete a location, and all its metadata, so that it no longer turned up in queries.  We'd still potentially have copies of packets from this in our tree, and at that point we'd want to copy the metadata over to make them local, (or orphaned, which might be better as one could then delete those later).
 
-## Create a portable package
+# Summary
 
-* We can simply zip a directory
-* We can zip a directory and limit to files that are included in the manifest
+```
+<root>/
+  .outpack/
+    location/
+      <location-id>/
+        <id>.json
+    metadata/
+      <id>.json
+  archive/
+    <name>/
+      <id>/
+  local/
+    <name>/
+      <id>/
+```
