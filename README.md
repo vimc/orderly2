@@ -155,6 +155,10 @@ Use cases:
 
 These would all be implemented in the engine (and the dynamic ones require that there's a pretty strong concept of "running report"), with the final fully resolved information saved out into the final metadata.
 
+## Running on HPC
+
+We don't scale well past one node because the task has to run in one go.  If we had more scope to run up to a point, launch 50 jobs, then finish we'd be able to do all sorts of fun things.
+
 ### Integration with other tools
 
 There are any number of [workflow tools](https://github.com/meirwah/awesome-workflow-engines) and [pipeline tools](https://github.com/pditommaso/awesome-pipeline) that exist already, we should make sure that we interact well with these.
