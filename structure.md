@@ -2,6 +2,8 @@
 
 Everything happens within an outpack repository, typically also a git repository.  We'll refer to the "root" which is usually where `.git` would live.
 
+Like with orderly, we will strongly advocate not adding outpack files to git; this will cover both the metadata (`.outpack/`) and the actual packets themselves.  Source files and configuration would be under version control.
+
 ## Basic metadata
 
 Our metadata store will be in `.outpack` and no file here is user editable.  The primary thing that this store contains is information about packets that might (or might not) be found within the archive.
