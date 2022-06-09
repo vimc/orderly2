@@ -1,0 +1,17 @@
+Package: orderly2
+Title: Reimplement Orderly
+Version: 0.1.0
+Authors@R: c(person("Rich", "FitzJohn", role = c("aut", "cre"),
+                    email = "email@example.com"),
+             person("Imperial College of Science, Technology and Medicine",
+                    role = "cph"))
+Description: A reimplementation of the good bits of orderly using outpack.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+URL: https://github.com/vimc/orderly2
+BugReports: https://github.com/vimc/orderly2/issues
+Suggests:
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
