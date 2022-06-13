@@ -61,7 +61,7 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
   for (x in names(check)) {
     pass_on_develop(
       develop,
-      data[[x]] <- check[[x]](raw[[x]], config, filename))
+      data[[x]] <- check[[x]](raw[[x]], filename))
   }
 
   ## Also changelog, readme
@@ -86,7 +86,7 @@ pass_on_develop <- function(develop, expr) {
 }
 
 
-orderly_yml_validate_script <- function(script, config, filename) {
+orderly_yml_validate_script <- function(script, filename) {
   assert_scalar_character(script, sprintf("%s:script", filename))
   assert_file_exists(script, name = "Script file")
   exprs <- parse(file = script, keep.source = TRUE)
@@ -102,7 +102,7 @@ orderly_yml_validate_script <- function(script, config, filename) {
 }
 
 
-orderly_yml_validate_resources <- function(resources, config, filename) {
+orderly_yml_validate_resources <- function(resources, filename) {
   if (is.null(resources)) {
     return(NULL)
   }
@@ -154,7 +154,7 @@ orderly_yml_validate_resources <- function(resources, config, filename) {
 ##       - filename.png
 ##
 ## Which is simpler and will be easier to edit.
-orderly_yml_validate_artefacts <- function(artefacts, config, filename) {
+orderly_yml_validate_artefacts <- function(artefacts, filename) {
   if (length(artefacts) == 0L) {
     stop("At least one artefact required")
   }
@@ -213,7 +213,7 @@ orderly_yml_validate_artefacts <- function(artefacts, config, filename) {
   }
   artefacts <- unname(artefacts)
 
-  res <- lapply(artefacts, orderly_yml_validate_artefact1, config, filename)
+  res <- lapply(artefacts, orderly_yml_validate_artefact1, filename)
 
   filenames <- unlist(lapply(res, "[[", "filenames"), FALSE, FALSE)
   dups <- unique(filenames[duplicated(filenames)])
@@ -230,7 +230,7 @@ orderly_yml_validate_artefacts <- function(artefacts, config, filename) {
 }
 
 
-orderly_yml_validate_artefact1 <- function(artefact, config, filename) {
+orderly_yml_validate_artefact1 <- function(artefact, filename) {
   index <- artefact$index
 
   ## NOTE: this means that we silently ignore the format and index
