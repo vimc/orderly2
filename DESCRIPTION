@@ -15,6 +15,7 @@ BugReports: https://github.com/vimc/orderly2/issues
 Imports:
     fs,
     jsonlite,
+    orderly,
     outpack,
     yaml
 Suggests:
