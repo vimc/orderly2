@@ -48,31 +48,25 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
     artefacts = orderly_yml_validate_artefacts)
 
   dat <- list(name = name,
-              path = path,
-              raw = raw)
+              path = path)
 
   required <- c("script", "artefacts")
-  optional <- setdiff(names(check), required)
+  optional <- "resources"
 
-  ## This is just a simple validation
   check_fields(raw, filename, required, optional)
 
-  data <- raw
   for (x in names(check)) {
     pass_on_develop(
       develop,
-      data[[x]] <- check[[x]](raw[[x]], filename))
+      dat[[x]] <- check[[x]](raw[[x]], filename))
   }
 
   ## Also changelog, readme
-
   ## Split off the db processing into its own thing as that's a bit complex
-
   ## Check unique inputs
 
-  data
+  dat
 }
-
 
 ## function to resolve deps
 ## function to get inputs
