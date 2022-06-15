@@ -88,7 +88,8 @@ orderly_yml_validate_script <- function(script, filename) {
     if (is_global_rm(exprs[[i]])) {
       stop(sprintf(
         "Do not use 'rm(list = ls())' or similar in your script (%s:%s)",
-        script, utils::getSrcLocation(exprs[i], "line")))
+        script, utils::getSrcLocation(exprs[i], "line")),
+        call. = FALSE)
     }
   }
 

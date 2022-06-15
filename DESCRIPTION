@@ -17,6 +17,7 @@ Imports:
     jsonlite,
     orderly,
     outpack,
+    withr,
     yaml
 Suggests:
     testthat (>= 3.0.0)
