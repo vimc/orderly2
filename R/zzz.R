@@ -24,5 +24,3 @@ assert_file_exists <- orderly:::assert_file_exists
 assert_is_directory <- orderly:::assert_is_directory
 match_value <- orderly:::match_value
 assert_type <- orderly:::assert_type
-
-
