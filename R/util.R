@@ -8,7 +8,6 @@ vlapply <- function(X, FUN, ...) { # nolint
 }
 
 
-
 is_directory <- function(x) {
   file.info(x, extra_cols = FALSE)$isdir
 }
@@ -16,14 +15,4 @@ is_directory <- function(x) {
 
 squote <- function(x) {
   sprintf("'%s'", x)
-}
-
-
-data_frame <- function(...) {
-  data.frame(..., check.names = FALSE, stringsAsFactors = FALSE)
-}
-
-
-scalar <- function(x) {
-  jsonlite::unbox(x)
 }

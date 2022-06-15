@@ -25,9 +25,8 @@
 ## * minimum_orderly_version - the required version
 orderly_root <- function(root, locate) {
   root <- outpack::outpack_root_open(root, locate)
-  if (root$config$core$path_archive == "draft") {
-    stop("The option 'core.path_archive' may not be 'draft' for orderly2")
-  }
+  ## NOTE: it's can't be changed yet, but core.path_archive cannot be
+  ## "draft" for this to work well.
   path <- root$path
   config <- orderly_config(path)
   ret <- list(outpack = root, config = config, path = path)
