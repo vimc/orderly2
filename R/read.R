@@ -27,19 +27,20 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
   owd <- setwd(path)
   on.exit(setwd(owd))
 
-  #global_resources = orderly_yml_validate_global_resources,
-  #fields = orderly_yml_validate_fields,
+  ## Remaining to implement from orderly:
 
-  #tags = orderly_yml_validate_tags,
-  #secrets = orderly_yml_validate_secrets,
-  #environment = orderly_yml_validate_environment,
+  ## * global_resources (requires a little bit more configuration control)
+  ## * fields (custom fields have not been super useful, also configuration)
+  ## * depends (requires that we sort out our query interface)
+  ## * tags (we'll probably remove these)
+  ## * environment (not sure how widely used this is)
+  ## * secrets (not sure how widely used this is, requires configuration)
+  ## * connection (db interface, will work through later)
+  ## * data (db interface, will work through later)
+  ## * views (db interface, will work through later)
 
-  #connection = orderly_yml_validate_connection,
-  #data = orderly_yml_validate_database,
-  #views = orderly_yml_validate_views,
-
-  #depends = orderly_yml_validate_depends,
-
+  ## TODO: Some of these do on-disk validation (usually that files
+  ## exist) - we might be better deferring this until later.
   check <- list(
     script = orderly_yml_validate_script,
     packages = orderly_yml_validate_packages,
@@ -54,7 +55,7 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
               path = path)
 
   required <- c("script", "artefacts")
-  optional <- "resources"
+  optional <- setdiff(names(check), required)
 
   check_fields(raw, filename, required, optional)
 
@@ -64,15 +65,16 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
       dat[[x]] <- check[[x]](raw[[x]], filename))
   }
 
-  ## Also changelog, readme
-  ## Split off the db processing into its own thing as that's a bit complex
-  ## Check unique inputs
+  ## In orderly there's a little extra processing that happens here:
+
+  ## * process changelog entries
+  ## * process readme
+  ## * a fair bit of db processing
+  ## * ensure that all inputs are unique
 
   dat
 }
 
-## function to resolve deps
-## function to get inputs
 
 pass_on_develop <- function(develop, expr) {
   if (develop) {
