@@ -304,3 +304,32 @@ test_that("parameters can be handled", {
                                     "orderly.yml"),
     "Unknown fields in orderly.yml:parameters:a: type")
 })
+
+
+test_that("Dependencies can be declared", {
+  path <- test_prepare_orderly_example(c("minimal", "depend"))
+  dat <- orderly_yml_read("depend", file.path(path, "src", "depend"))
+  expect_equal(
+    dat$depends,
+    data.frame(id = "latest", name = "minimal", filename = "mygraph.png",
+               as = "graph.png"))
+})
+
+
+test_that("Cope with both unordered and ordered lists", {
+  d1 <- list(list(a = list(id = "id", use = list(to1 = "from1"))),
+             list(b = list(id = "id", use = list(to2 = "from2"))))
+  d2 <- list(a = list(id = "id", use = list(to1 = "from1")),
+             b = list(id = "id", use = list(to2 = "from2")))
+  expect_equal(
+    orderly_yml_validate_depends(d1, "orderly.yml"),
+    orderly_yml_validate_depends(d2, "orderly.yml"))
+})
+
+
+test_that("Validate use", {
+  expect_error(
+    orderly_yml_validate_depends(
+      list(a = list(id = "id", use = list(to = c("x", "y")))), "orderly.yml"),
+    "orderly.yml:depends:a:use must all be single strings")
+})

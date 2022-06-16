@@ -31,7 +31,6 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
 
   ## * global_resources (requires a little bit more configuration control)
   ## * fields (custom fields have not been super useful, also configuration)
-  ## * depends (requires that we sort out our query interface)
   ## * tags (we'll probably remove these)
   ## * environment (not sure how widely used this is)
   ## * secrets (not sure how widely used this is, requires configuration)
@@ -49,6 +48,7 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
     description = orderly_yml_validate_description,
     parameters = orderly_yml_validate_parameters,
     resources = orderly_yml_validate_resources,
+    depends = orderly_yml_validate_depends,
     artefacts = orderly_yml_validate_artefacts)
 
   dat <- list(name = name,
@@ -199,6 +199,48 @@ orderly_yml_validate_resources <- function(resources, filename) {
   }
 
   resources
+}
+
+
+orderly_yml_validate_depends <- function(depends, filename) {
+  if (is.null(depends)) {
+    return(NULL)
+  }
+
+  ## Deal with yaml weirdness:
+  if (is.null(names(depends))) {
+    depends <- ordered_map_to_list(depends)
+  }
+
+  for (i in seq_along(depends)) {
+    depends[[i]]$name <- names(depends)[[i]]
+    depends[[i]] <- recipe_validate_depend1(depends[[i]], filename)
+  }
+
+  ret <- rbind_df(depends)
+  rownames(ret) <- NULL
+  ret
+}
+
+
+recipe_validate_depend1 <- function(depend, filename) {
+  name <- depend$name
+  v <- c("id", "use", "name")
+  check_fields(depend, sprintf("%s:depends:%s", filename, name), v, NULL)
+
+  assert_character(depend$id, sprintf("%s:depends:%s:id", filename, name))
+  assert_named(depend$use, TRUE, sprintf("%s:depends:%s:use", filename, name))
+  err <- !vlapply(depend$use, function(x) is.character(x) && length(x) == 1)
+  if (any(err)) {
+    stop(sprintf("%s:depends:%s:use must all be single strings",
+                 filename, name),
+         call. = FALSE)
+  }
+
+  data_frame(id = depend$id,
+             name = name,
+             filename = list_to_character(depend$use, FALSE),
+             as = names(depend$use))
 }
 
 

@@ -16,3 +16,8 @@ is_directory <- function(x) {
 squote <- function(x) {
   sprintf("'%s'", x)
 }
+
+
+data_frame <- function(...) {
+  data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
+}
