@@ -21,3 +21,8 @@ squote <- function(x) {
 data_frame <- function(...) {
   data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
 }
+
+
+scalar <- function(x) {
+  jsonlite::unbox(x)
+}
