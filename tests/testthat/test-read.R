@@ -281,3 +281,27 @@ test_that("description must be a scalar character", {
     orderly_yml_validate_description(letters, "orderly.yml"),
     "'orderly.yml:description' must be a scalar")
 })
+
+
+test_that("parameters can be handled", {
+  expect_equal(
+    orderly_yml_validate_parameters(list(a = NULL, b = NULL), "orderly.yml"),
+    list(a = NULL, b = NULL))
+  expect_equal(
+    orderly_yml_validate_parameters(list(a = list(default = 1), b = NULL),
+                                    "orderly.yml"),
+    list(a = list(default = 1), b = NULL))
+
+  ## Was deprecated since ages ago
+  expect_error(
+    orderly_yml_validate_parameters(c("a", "b"), "orderly.yml"),
+    "'orderly.yml:parameters' must be named")
+
+  expect_error(
+    orderly_yml_validate_parameters(list(a = 1, b = 2), "orderly.yml"),
+    "'orderly.yml:parameters:a' must be named")
+  expect_error(
+    orderly_yml_validate_parameters(list(a = list(type = "number"), b = NULL),
+                                    "orderly.yml"),
+    "Unknown fields in orderly.yml:parameters:a: type")
+})

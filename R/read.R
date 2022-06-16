@@ -27,8 +27,6 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
   owd <- setwd(path)
   on.exit(setwd(owd))
 
-  #parameters = orderly_yml_validate_parameters,
-
   #global_resources = orderly_yml_validate_global_resources,
   #fields = orderly_yml_validate_fields,
 
@@ -48,6 +46,7 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
     sources = orderly_yml_validate_sources,
     displayname = orderly_yml_validate_displayname,
     description = orderly_yml_validate_description,
+    parameters = orderly_yml_validate_parameters,
     resources = orderly_yml_validate_resources,
     artefacts = orderly_yml_validate_artefacts)
 
@@ -136,6 +135,27 @@ orderly_yml_validate_description <- function(description, filename) {
   }
   assert_scalar_character(description, sprintf("%s:description", filename))
   description
+}
+
+
+orderly_yml_validate_parameters <- function(parameters, filename) {
+  if (is.null(parameters) || length(parameters) == 0L) {
+    return(NULL)
+  }
+
+  name <- function(p) {
+    sprintf("%s:parameters:%s", filename, p)
+  }
+
+  assert_named(parameters, TRUE, sprintf("%s:parameters", filename))
+  for (p in names(parameters)) {
+    if (!is.null(parameters[[p]])) {
+      assert_named(parameters[[p]], name = name(p))
+      check_fields(parameters[[p]], name(p), NULL, "default")
+    }
+  }
+
+  parameters
 }
 
 
