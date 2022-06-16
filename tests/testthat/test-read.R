@@ -89,3 +89,76 @@ test_that("Directory resources with trailing slashes are cleaned", {
   dat <- orderly_yml_read("minimal", dirname(path_yml))
   expect_setequal(dat$resources, c("data.csv", "dir/a", "dir/b", "dir/c"))
 })
+
+
+test_that("At least one artefact required", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  yaml_write(list(script = "script.R",
+                  resources = "data.csv",
+                  artefacts = NULL),
+             path_yml)
+  expect_error(orderly_yml_read("minimal", dirname(path_yml)),
+               "At least one artefact required")
+})
+
+
+test_that("Helpful error if given strings", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  yaml_write(list(script = "script.R",
+                  resources = "data.csv",
+                  artefacts = c("a", "b")),
+             path_yml)
+  err <- expect_error(orderly_yml_read("minimal", dirname(path_yml)),
+                      "Your artefacts are misformatted.")
+})
+
+
+test_that("Allow ordered map if single artefact given", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  cmp <- orderly_yml_read("minimal", dirname(path_yml))
+  
+  yaml_write(list(script = cmp$script,
+                  resources = cmp$resources,
+                  artefacts = list(list(
+                    staticgraph = list(
+                      description = cmp$artefacts[[1]]$description,
+                      filenames = cmp$artefacts[[1]]$filenames)))),
+             path_yml)
+  dat <- orderly_yml_read("minimal", dirname(path_yml))
+  expect_identical(dat, cmp)
+})
+
+
+test_that("Filenames must be unique across artefacts", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  yaml_write(list(script = "script.R",
+                  resources = "data.csv",
+                  artefacts = list(list(
+                    staticgraph = list(
+                      description = "a graph",
+                      filenames = c("mygraph.png", "mygraph.png"))))),
+             path_yml)
+  expect_error(
+    orderly_yml_read("minimal", dirname(path_yml)),
+    "Duplicate artefact filenames are not allowed: 'mygraph.png'")
+})
+
+
+test_that("README.md may not be listed as an artefact", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  yaml_write(list(script = "script.R",
+                  resources = "data.csv",
+                  artefacts = list(list(
+                    staticgraph = list(
+                      description = "a graph",
+                      filenames = c("mygraph.png", "README.md"))))),
+             path_yml)
+  expect_error(
+    orderly_yml_read("minimal", dirname(path_yml)),
+    "README.md should not be listed as an artefact")
+})
