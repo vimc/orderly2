@@ -132,6 +132,45 @@ test_that("Allow ordered map if single artefact given", {
 })
 
 
+test_that("Filenames must be a character vector", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  writeLines(c(
+    "script: script.R",
+    "artefacts:",
+    "  graph:",
+    "    description: A graph of things",
+    "    filenames: mygraph.png"),
+    path_yml)
+  expect_error(
+    orderly_yml_read("minimal", dirname(path_yml)),
+    "orderly.yml:artefacts[1]'; should be one of 'staticgraph'",
+    fixed = TRUE)
+})
+
+
+test_that("Require ordered map with more than one", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  writeLines(c(
+    "script: script.R",
+    "artefacts:",
+    "  staticgraph:",
+    "    description: A graph of things",
+    "    filenames: mygraph.png",
+    "  data:",
+    "    description: Some data",
+    "    filenames: data.csv"),
+    path_yml)
+
+  ## TODO: there are complicated extra tests for verifying that the
+  ## provided fix works
+  expect_error(
+    suppressMessages(orderly_yml_read("minimal", dirname(path_yml))),
+    "Expected an ordered map")
+})
+
+
 test_that("Filenames must be unique across artefacts", {
   path <- test_prepare_orderly_example("minimal")
   path_yml <- file.path(path, "src", "minimal", "orderly.yml")
@@ -161,4 +200,38 @@ test_that("README.md may not be listed as an artefact", {
   expect_error(
     orderly_yml_read("minimal", dirname(path_yml)),
     "README.md should not be listed as an artefact")
+})
+
+
+test_that("Filenames must be a character vector", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  writeLines(c(
+    "script: script.R",
+    "artefacts:",
+    "  staticgraph:",
+    "    description: A graph of things",
+    "    filenames: 1"),
+    path_yml)
+  expect_error(
+    orderly_yml_read("minimal", dirname(path_yml)),
+    "orderly.yml:artefacts[1]:description must be character (check entry 1)",
+    fixed = TRUE)
+})
+
+
+test_that("Filenames must be a character vector", {
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  writeLines(c(
+    "script: script.R",
+    "artefacts:",
+    "  graph:",
+    "    description: A graph of things",
+    "    filenames: mygraph.png"),
+    path_yml)
+  expect_error(
+    orderly_yml_read("minimal", dirname(path_yml)),
+    "orderly.yml:artefacts[1]'; should be one of 'staticgraph'",
+    fixed = TRUE)
 })
