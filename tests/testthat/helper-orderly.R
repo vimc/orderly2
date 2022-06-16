@@ -8,3 +8,9 @@ test_prepare_orderly_example <- function(examples, ...) {
   }
   tmp
 }
+
+
+append_lines <- function(new, path) {
+  txt <- readLines(path)
+  writeLines(c(txt, new), path)
+}
