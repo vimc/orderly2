@@ -235,3 +235,49 @@ test_that("Filenames must be a character vector", {
     "orderly.yml:artefacts[1]'; should be one of 'staticgraph'",
     fixed = TRUE)
 })
+
+
+test_that("packages must be a character vector", {
+  expect_null(
+    orderly_yml_validate_packages(NULL, "orderly.yml"))
+  expect_equal(
+    orderly_yml_validate_packages(c("a", "b", "c"), "orderly.yml"),
+    c("a", "b", "c"))
+  expect_error(
+    orderly_yml_validate_packages(c(1, 2, 3), "orderly.yml"),
+    "'orderly.yml:packages' must be character")
+})
+
+
+test_that("sources must exist", {
+  expect_error(
+    orderly_yml_validate_sources(c("a", "b", "c"), "orderly.yml"),
+    "Source file does not exist: 'a', 'b', 'c'")
+
+  withr::with_tempdir({
+    file.create(c("a", "b", "c"))
+    expect_equal(
+      orderly_yml_validate_sources(c("a", "b", "c"), "orderly.yml"),
+      c("a", "b", "c"))
+  })
+})
+
+
+test_that("displayname must be a scalar character", {
+  expect_equal(
+    orderly_yml_validate_displayname("desc", "orderly.yml"),
+    "desc")
+  expect_error(
+    orderly_yml_validate_displayname(letters, "orderly.yml"),
+    "'orderly.yml:displayname' must be a scalar")
+})
+
+
+test_that("description must be a scalar character", {
+  expect_equal(
+    orderly_yml_validate_description("desc", "orderly.yml"),
+    "desc")
+  expect_error(
+    orderly_yml_validate_description(letters, "orderly.yml"),
+    "'orderly.yml:description' must be a scalar")
+})

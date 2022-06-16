@@ -27,23 +27,27 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
   owd <- setwd(path)
   on.exit(setwd(owd))
 
-  #packages = orderly_yml_validate_packages,
-  #sources = orderly_yml_validate_sources,
-  #global_resources = orderly_yml_validate_global_resources,
   #parameters = orderly_yml_validate_parameters,
+
+  #global_resources = orderly_yml_validate_global_resources,
   #fields = orderly_yml_validate_fields,
+
   #tags = orderly_yml_validate_tags,
   #secrets = orderly_yml_validate_secrets,
   #environment = orderly_yml_validate_environment,
+
   #connection = orderly_yml_validate_connection,
   #data = orderly_yml_validate_database,
   #views = orderly_yml_validate_views,
+
   #depends = orderly_yml_validate_depends,
-  #displayname = orderly_yml_validate_displayname,
-  #description = orderly_yml_validate_description,
 
   check <- list(
     script = orderly_yml_validate_script,
+    packages = orderly_yml_validate_packages,
+    sources = orderly_yml_validate_sources,
+    displayname = orderly_yml_validate_displayname,
+    description = orderly_yml_validate_description,
     resources = orderly_yml_validate_resources,
     artefacts = orderly_yml_validate_artefacts)
 
@@ -94,6 +98,44 @@ orderly_yml_validate_script <- function(script, filename) {
   }
 
   script
+}
+
+
+## Later on we need to expand this to support more options about
+## package versions etc.
+orderly_yml_validate_packages <- function(packages, filename) {
+  if (is.null(packages)) {
+    return(NULL)
+  }
+  assert_character(packages, sprintf("%s:packages", filename))
+  packages
+}
+
+
+orderly_yml_validate_sources <- function(sources, filename) {
+  if (is.null(sources)) {
+    return()
+  }
+  assert_character(sources, sprintf("%s:%s", filename, "sources"))
+  assert_file_exists(sources, name = "Source file")
+  sources
+}
+
+orderly_yml_validate_displayname <- function(displayname, filename) {
+  if (is.null(displayname)) {
+    return(NULL)
+  }
+  assert_scalar_character(displayname, sprintf("%s:displayname", filename))
+  displayname
+}
+
+
+orderly_yml_validate_description <- function(description, filename) {
+  if (is.null(description)) {
+    return(NULL)
+  }
+  assert_scalar_character(description, sprintf("%s:description", filename))
+  description
 }
 
 
