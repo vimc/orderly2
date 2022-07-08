@@ -93,6 +93,44 @@ test_that("Notify if additional files are created", {
 })
 
 
+test_that("Can read functions in from source", {
+  path <- test_prepare_orderly_example("source")
+  env <- new.env()
+  id <- orderly_run("source", root = path, envir = env)
+  expect_equal(ls(env), "average")
+  expect_equal(
+    readRDS(file.path(path, "archive", "source", id, "data.rds")),
+    apply(mtcars, 2, mean))
+
+  root <- orderly_root(path, FALSE)
+  meta <- root$outpack$metadata(id, full = TRUE)
+  role <- json_to_df(meta$custom$orderly$role)
+  expect_true("functions.R" %in% role$path)
+  expect_equal(role$role[role$path == "functions.R"], "source")
+})
+
+
+test_that("Can load packages", {
+  skip_if_not_installed("mockery")
+  mock_library <- mockery::mock()
+
+  path <- test_prepare_orderly_example("minimal")
+  path_yml <- file.path(path, "src", "minimal", "orderly.yml")
+  append_lines("packages:\n  - a\n  - b", path_yml)
+
+  mockery::stub(orderly_run, "library", mock_library)
+
+  env <- new.env()
+  id <- orderly_run("minimal", root = path, envir = env)
+
+  mockery::expect_called(mock_library, 2)
+  expect_equal(mockery::mock_args(mock_library)[[1]],
+               list("a", character.only = TRUE))
+  expect_equal(mockery::mock_args(mock_library)[[2]],
+               list("b", character.only = TRUE))
+})
+
+
 test_that("clean parameters when none are specified", {
   expect_null(check_parameters(NULL, list()))
   expect_null(check_parameters(list(), list()))

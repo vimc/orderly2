@@ -14,3 +14,13 @@ append_lines <- function(new, path) {
   txt <- readLines(path)
   writeLines(c(txt, new), path)
 }
+
+
+json_to_df <- function(x) {
+  nms <- lapply(x, names)
+  stopifnot(length(unique(nms)) == 1)
+  nms <- nms[[1]]
+  dat <- lapply(nms, function(nm) sapply(x, "[[", nm))
+  names(dat) <- nms
+  as.data.frame(dat)
+}

@@ -32,3 +32,8 @@ to_json <- function(obj) {
   jsonlite::toJSON(obj, pretty = FALSE, auto_unbox = FALSE, na = "null",
                    null = "null")
 }
+
+
+rep_along <- function(x, v) {
+  rep_len(x, length(v))
+}

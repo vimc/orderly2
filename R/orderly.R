@@ -119,11 +119,14 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
   custom_packages <- orderly_yml_dat$packages %||% character()
   custom_global <- list()
 
-  ## Not yet handled here: source, global, readme
+  ## Not yet handled here: global, readme
   custom_role <- data_frame(
-    path = c("orderly.yml", orderly_yml_dat$script, orderly_yml_dat$resources),
+    path = c("orderly.yml", orderly_yml_dat$script,
+             orderly_yml_dat$sources,
+             orderly_yml_dat$resources),
     role = c("orderly_yml", "script",
-             rep("resource", length(orderly_yml_dat$resources))))
+             rep_along("source", orderly_yml_dat$sources),
+             rep_along("resource", orderly_yml_dat$resources)))
 
   list(
     artefacts = custom_artefacts,
