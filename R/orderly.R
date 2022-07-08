@@ -42,8 +42,8 @@
 ##'   must be a scalar character, numeric, integer or logical.
 ##'
 ##' @param envir The environment that will be used to evaluate the
-##'   report script; by default a new environment will be made with
-##'   the global environment as the parent.
+##'   report script; by default we use the global environment, which
+##'   may not always be what is wanted.
 ##'
 ##' @param root The path to an orderly root directory, or `NULL`
 ##'   (the default) to search for one from the current working
@@ -79,9 +79,8 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   fs::dir_create(file.path(path, dirname(inputs)))
   fs::file_copy(file.path(src, inputs), path)
 
-  if (is.null(envir)) {
-    envir <- .GlobalEnv
-  }
+  envir <- envir %||% .GlobalEnv
+  assert_is(envir, "environment")
 
   withCallingHandlers({
     outpack::outpack_packet_start(path, name, parameters = parameters,
@@ -140,17 +139,24 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
 check_produced_files <- function(path, expected, status) {
   found <- file_exists(expected, workdir = path)
   if (any(!found)) {
-    stop("Some files not produced")
+    stop("Script did not produce expected artefacts: ",
+         paste(squote(expected[!found]), collapse = ", "))
   }
   extra <- setdiff(status$path[status$status == "unknown"], expected)
   if (length(extra) > 0) {
-    message("Some extra files found")
+    ## TODO: once we get logging, this would go through that;
+    ## currently the format is different to orderly but that's fine.
+    ##
+    ## TODO: once mrc-3382 is fixed we can mark these to ignore in
+    ## outpack
+    message("Some extra files found: ",
+            paste(squote(extra), collapse = ", "))
   }
 }
 
 
 check_parameters <- function(parameters, info) {
-  if (!is.null(parameters)) {
+  if (length(parameters) > 0) {
     assert_named(parameters, unique = TRUE)
   }
   has_default <- names(info)[vlapply(info, function(x) "default" %in% names(x))]
@@ -161,6 +167,9 @@ check_parameters <- function(parameters, info) {
   extra <- setdiff(names(parameters), names(info))
   if (length(extra) > 0L) {
     stop("Extra parameters: ", paste(squote(extra), collapse = ", "))
+  }
+  if (length(info) == 0) {
+    return(NULL)
   }
   is_nonscalar <- lengths(parameters) != 1
   if (any(is_nonscalar)) {
