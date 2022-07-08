@@ -1,7 +1,8 @@
 test_that("Can run simple example", {
   path <- test_prepare_orderly_example("minimal")
 
-  id <- orderly_run("minimal", root = path)
+  env <- new.env()
+  id <- orderly_run("minimal", root = path, envir = env)
   expect_match(id, "^([0-9]{8}-[0-9]{6}-[[:xdigit:]]{8})$")
   p <- file.path(path, "archive", "minimal", id)
   expect_true(file.exists(p))
@@ -21,4 +22,22 @@ test_that("Can run simple example", {
     meta$custom$orderly$artefacts,
     list(list(description = "A graph of things",
               paths = list("mygraph.png"))))
+})
+
+
+test_that("Can run an example with parameters", {
+  path <- test_prepare_orderly_example("parameters")
+  expect_error(orderly_run("parameters", root = path),
+               "Missing parameters: 'a', 'b'")
+  env <- new.env()
+  id <- orderly_run("parameters", list(a = 1, b = 2), envir = env, root = path)
+
+  dat <- readRDS(file.path(path, "archive", "parameters", id, "data.rds"))
+  expect_equal(dat, list(a = 1, b = 2, c = 3))
+
+  root <- orderly_root(path, FALSE)
+  expect_equal(names(root$outpack$index()$metadata), id)
+
+  expect_equal(root$outpack$metadata(id)$parameters, dat)
+  expect_mapequal(as.list(env), dat)
 })

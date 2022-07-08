@@ -1,0 +1,10 @@
+script: script.R
+parameters:
+  a: ~
+  b: ~
+  c:
+    default: 3
+artefacts:
+  data:
+    description: Some output data
+    filenames: data.rds

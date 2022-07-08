@@ -24,6 +24,7 @@
 ##' * store git status in metadata (mrc-3380)
 ##' * save metadata on failure (mrc-3379)
 ##' * loading environment variables from orderly_envir.yml
+##' * echoing run output to console not supported (mrc-3381)
 ##'
 ##' Smaller behavioural changes that might be up for changing later
 ##'
@@ -53,13 +54,10 @@
 ##'   then orderly looks in the working directory and up through its
 ##'   parents until it finds an `.outpack` directory
 ##'
-##' @param echo Print the result of running the R code to the
-##'   console. Passed through to [sys.source]
-##'
 ##' @return The id of the newly created report
 ##' @export
 orderly_run <- function(name, parameters = NULL, envir = NULL,
-                        root = NULL, locate = TRUE, echo = TRUE) {
+                        root = NULL, locate = TRUE) {
   root <- orderly_root(root, locate)
 
   src <- file.path(root$path, "src", name)
