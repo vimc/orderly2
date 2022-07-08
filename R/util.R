@@ -26,3 +26,9 @@ data_frame <- function(...) {
 scalar <- function(x) {
   jsonlite::unbox(x)
 }
+
+
+to_json <- function(obj) {
+  jsonlite::toJSON(obj, pretty = FALSE, auto_unbox = FALSE, na = "null",
+                   null = "null")
+}

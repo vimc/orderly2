@@ -1,88 +1,183 @@
+##' Run a report.  This will create a new directory in
+##' `drafts/<reportname>`, copy your declared resources there, run
+##' your script and check that all expected artefacts were created.
+##'
+##' @section Differences with orderly:
+##'
+##' There is no longer a "commit" phase, we will write a vignette
+##'   explaining this change more fully.
+##'
+##' Not supported yet:
+##'
+##' * automatic handling of README files
+##' * dependencies (at least mrc-3113)
+##' * global resources (requires more orderly2 configuration)
+##' * fields (requires more orderly2 configuration)
+##' * tags (we will probably remove these)
+##' * environment
+##' * secrets
+##' * all database support (connection, data and views, plus interpolation
+##'   of parameters into queries)
+##' * automatic installation of missing packages (VIMC-6626)
+##' * check balance of the device and conneciton stack (VIMC-6628)
+##' * store random number state in metadata (VIMC-6627)
+##' * store git status in metadata (mrc-3380)
+##' * save metadata on failure (mrc-3379)
+##' * loading environment variables from orderly_envir.yml
+##'
+##' Smaller behavioural changes that might be up for changing later
+##'
+##' * Strip leading `src/` from `name`
+##' * Allow `name = NULL` and use current working directory
+##' * The `.outpack/` directory now marks the root, not the
+##'   `orderly_config.yml`  file, though this must also exist.
+##'
+##' @title Run a report
+##'
+##' @param name Name of the report to run
+##'
+##' @param parameters Parameters passed to the report. A named list of
+##'   parameters declared in the `orderly.yml`.  Each parameter
+##'   must be a scalar character, numeric, integer or logical.
+##'
+##' @param envir The environment that will be used to evaluate the
+##'   report script; by default a new environment will be made with
+##'   the global environment as the parent.
+##'
+##' @param root The path to an orderly root directory, or `NULL`
+##'   (the default) to search for one from the current working
+##'   directory if `locate` is `TRUE`.
+##'
+##' @param locate Logical, indicating if the configuration should be
+##'   searched for.  If `TRUE` and `config` is not given,
+##'   then orderly looks in the working directory and up through its
+##'   parents until it finds an `.outpack` directory
+##'
+##' @param echo Print the result of running the R code to the
+##'   console. Passed through to [sys.source]
+##'
+##' @return The id of the newly created report
+##' @export
 orderly_run <- function(name, parameters = NULL, envir = NULL,
                         root = NULL, locate = TRUE, echo = TRUE) {
   root <- orderly_root(root, locate)
 
   src <- file.path(root$path, "src", name)
   dat <- orderly_yml_read(name, src)
-  inputs <- c("orderly.yml", dat$script, dat$resources)
 
-  id <- outpack::outpack_id()
-  dst <- file.path(root$path, "draft", name, id)
-  fs::dir_create(dst)
-
-  ## NOTE: this copy does not cope with nested directories, see
-  ## orderly for this working well.
-  fs::file_copy(file.path(src, inputs), dst)
-
-  ## TODO: this should have an error handler on it, so that we call
-  ## outpack_packet_cancel if anything fails here.
-  outpack::outpack_packet_start(dst, name, id = id, root = root$outpack)
-  outpack::outpack_packet_file_mark(inputs)
+  parameters <- check_parameters(parameters, dat$parameters)
+  inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
   ## TODO: fairly sure we're not correctly validating the schema here,
   ## try with invalid type for displayname, for example.
-  custom <- jsonlite::toJSON(orderly_custom_fields(dat), pretty = FALSE,
-                             auto_unbox = FALSE, na = "null", null = "null")
-  outpack::outpack_packet_add_custom("orderly", custom, custom_schema())
+  custom_metadata <- to_json(orderly_custom_metadata(dat))
 
-  outpack::outpack_packet_run(dat$script, envir %||% .GlobalEnv)
-  status <- outpack::outpack_packet_file_list()
+  expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
 
-  filenames <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
-  found <- file_exists(filenames, workdir = dst)
-  if (any(!found)) {
-    stop("Some files not produced")
+  id <- outpack::outpack_id()
+  path <- file.path(root$path, "draft", name, id)
+  fs::dir_create(path)
+
+  fs::dir_create(file.path(path, dirname(inputs)))
+  fs::file_copy(file.path(src, inputs), path)
+
+  if (is.null(envir)) {
+    envir <- .GlobalEnv
   }
 
-  extra <- setdiff(status$path[status$status == "unknown"], filenames)
-  if (length(extra) > 0) {
-    message("Some extra files found")
-  }
-
-  outpack::outpack_packet_end()
-
-  unlink(dst, recursive = TRUE)
+  withCallingHandlers({
+    outpack::outpack_packet_start(path, name, parameters = parameters,
+                                  id = id, root = root$outpack)
+    if (!is.null(parameters)) {
+      list2env(parameters, envir)
+    }
+    outpack::outpack_packet_file_mark(inputs)
+    outpack::outpack_packet_add_custom("orderly", custom_metadata,
+                                       custom_metadata_schema())
+    for (p in dat$packages) {
+      library(p, character.only = TRUE)
+    }
+    withr::with_dir(path, {
+      for (s in dat$sources) {
+        sys.source(s, envir = envir)
+      }
+    })
+    outpack::outpack_packet_run(dat$script, envir)
+    check_produced_files(path, expected, outpack::outpack_packet_file_list())
+    outpack::outpack_packet_end()
+    unlink(path, recursive = TRUE)
+  }, error = function(e) {
+    ## Eventually fail nicely here with mrc-3379
+    outpack::outpack_packet_cancel()
+  })
 
   id
 }
 
 
-orderly_custom_fields <- function(dat) {
-  custom_artefacts <- lapply(dat$artefacts, function(x)
+orderly_custom_metadata <- function(orderly_yml_dat) {
+  custom_artefacts <- lapply(orderly_yml_dat$artefacts, function(x)
     list(description = scalar(x$description),
          paths = x$filenames))
-  custom_packages <- dat$packages %||% character()
+  custom_packages <- orderly_yml_dat$packages %||% character()
   custom_global <- list()
 
   ## Not yet handled here: source, global, readme
   custom_role <- data_frame(
-    path = c("orderly.yml", dat$script, dat$resources),
-    role = c("orderly_yml", "script", rep("resource", length(dat$resources))))
+    path = c("orderly.yml", orderly_yml_dat$script, orderly_yml_dat$resources),
+    role = c("orderly_yml", "script",
+             rep("resource", length(orderly_yml_dat$resources))))
 
   list(
     artefacts = custom_artefacts,
     packages = custom_packages,
     global = custom_global,
     role = custom_role,
-    display_name = dat$display_name,
-    description = dat$description,
+    display_name = orderly_yml_dat$display_name,
+    description = orderly_yml_dat$description,
     custom = NULL)
 }
 
 
-orderly_root <- function(root, locate) {
-  ## TODO: we'll need something nice to help here, that will be easier
-  ## to do once we know what we actually want to export from the root
-  ## I guess.
-  if (locate) {
-    root <- outpack:::outpack_root_locate(root)
-  } else {
-    root <- outpack:::outpack_root_open(root)
+check_produced_files <- function(path, expected, status) {
+  found <- file_exists(expected, workdir = path)
+  if (any(!found)) {
+    stop("Some files not produced")
+  }
+  extra <- setdiff(status$path[status$status == "unknown"], expected)
+  if (length(extra) > 0) {
+    message("Some extra files found")
+  }
+}
+
+
+check_parameters <- function(parameters, info) {
+  if (!is.null(parameters)) {
+    assert_named(parameters, unique = TRUE)
+  }
+  has_default <- names(info)[vlapply(info, function(x) "default" %in% names(x))]
+  msg <- setdiff(setdiff(names(info), names(parameters)), has_default)
+  if (length(msg) > 0L) {
+    stop("Missing parameters: ", paste(squote(msg), collapse = ", "))
+  }
+  extra <- setdiff(names(parameters), names(info))
+  if (length(extra) > 0L) {
+    stop("Extra parameters: ", paste(squote(extra), collapse = ", "))
+  }
+  is_nonscalar <- lengths(parameters) != 1
+  if (any(is_nonscalar)) {
+    stop(sprintf("Invalid parameters: %s - must be scalar",
+                 paste(squote(names(which(is_nonscalar))), collapse = ", ")))
+  }
+  err <- !vlapply(parameters, function(x)
+    is.character(x) || is.numeric(x) || is.logical(x))
+  if (any(err)) {
+    stop(sprintf(
+      "Invalid parameters: %s - must be character, numeric or logical",
+      paste(squote(names(err[err])), collapse = ", ")))
   }
 
-  if (root$config$core$path_archive == "draft") {
-    stop("The option 'core.path_archive' may not be 'draft' for orderly2")
-  }
-
-  list(outpack = root, path = root$path)
+  use_default <- setdiff(has_default, names(parameters))
+  parameters[use_default] <- lapply(info[use_default], "[[", "default")
+  parameters[names(info)]
 }
