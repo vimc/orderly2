@@ -19,10 +19,11 @@ Imports:
     outpack (>= 0.1.1),
     yaml
 Suggests:
-    jsonvalidate,
+    jsonvalidate (>= 1.4.0),
     mockery,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
 Remotes:
-    mrc-ide/outpack
+    mrc-ide/outpack,
+    ropensci/jsonvalidate
