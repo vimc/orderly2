@@ -156,6 +156,11 @@ check_produced_files <- function(path, expected, status) {
 }
 
 
+## outpack just wants a list of parameters - they can be any key-value
+## pairs with string keys and "simple" values. However, orderly cares
+## about what parameters are provided against a spec in orderly.yml,
+## so we validate that here, filling in defaults and checking no
+## additional parameters are provided.
 check_parameters <- function(parameters, info) {
   if (length(parameters) > 0) {
     assert_named(parameters, unique = TRUE)
