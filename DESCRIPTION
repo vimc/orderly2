@@ -19,6 +19,7 @@ Imports:
     outpack (>= 0.1.1),
     yaml
 Suggests:
+    jsonvalidate,
     mockery,
     testthat (>= 3.0.0),
     withr

@@ -1,4 +1,5 @@
-options(outpack.schema_validate = TRUE)
+options(
+  outpack.schema_validate = requireNamespace("jsonvalidate", quietly = TRUE))
 
 
 test_prepare_orderly_example <- function(examples, ...) {
