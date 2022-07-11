@@ -172,18 +172,6 @@ check_parameters <- function(parameters, info) {
   if (length(info) == 0) {
     return(NULL)
   }
-  is_nonscalar <- lengths(parameters) != 1
-  if (any(is_nonscalar)) {
-    stop(sprintf("Invalid parameters: %s - must be scalar",
-                 paste(squote(names(which(is_nonscalar))), collapse = ", ")))
-  }
-  err <- !vlapply(parameters, function(x)
-    is.character(x) || is.numeric(x) || is.logical(x))
-  if (any(err)) {
-    stop(sprintf(
-      "Invalid parameters: %s - must be character, numeric or logical",
-      paste(squote(names(err[err])), collapse = ", ")))
-  }
 
   use_default <- setdiff(has_default, names(parameters))
   parameters[use_default] <- lapply(info[use_default], "[[", "default")

@@ -154,14 +154,3 @@ test_that("clean parameters given spec", {
   expect_error(check_parameters(list(a = 1, c = 3, d = 4), info),
                "Extra parameters: 'c', 'd'")
 })
-
-
-test_that("Parameters are atomic and simple", {
-  info <- list(a = NULL, b = NULL)
-  expect_error(
-    check_parameters(list(a = 1 + 2i, b = 2), info),
-    "Invalid parameters: 'a' - must be character, numeric or logical")
-  expect_error(
-    check_parameters(list(a = NULL, b = 2:4), info),
-    "Invalid parameters: 'a', 'b' - must be scalar")
-})
