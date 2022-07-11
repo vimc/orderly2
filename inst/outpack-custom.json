@@ -16,22 +16,30 @@
                     "paths": {
                         "comment": "Will match the set of paths in outpack",
                         "type": "array",
-                        "items": "string"
+                        "items": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "packages": {
             "type": "array",
-            "items": "string"
+            "items": {
+              "type": "string"
+            }
         },
         "global": {
             "type": "array",
             "items": {
                 "type": "object",
                 "properties": {
-                    "here": "string",
-                    "there": "string"
+                    "here": {
+                        "type": "string"
+                    },
+                    "there": {
+                        "type": "string"
+                    }
                 },
                 "required": ["here", "there"]
             }
@@ -46,7 +54,7 @@
                         "type": "string"
                     },
                     "role": {
-                        "enum": ["script"]
+                        "enum": ["orderly_yml", "resource", "script", "source"]
                     }
                 }
             }
@@ -59,5 +67,8 @@
         },
         "custom": {
         }
-    }
+    },
+    "additionalProperties": false,
+    "required": ["artefacts", "packages", "global", "role",
+                 "displayname", "description", "custom"]
 }

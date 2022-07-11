@@ -1,3 +1,6 @@
+options(outpack.schema_validate = TRUE)
+
+
 test_prepare_orderly_example <- function(examples, ...) {
   tmp <- tempfile()
   withr::defer_parent(unlink(tmp, recursive = TRUE))
