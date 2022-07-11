@@ -118,7 +118,7 @@ test_that("Allow ordered map if single artefact given", {
   path <- test_prepare_orderly_example("minimal")
   path_yml <- file.path(path, "src", "minimal", "orderly.yml")
   cmp <- orderly_yml_read("minimal", dirname(path_yml))
-  
+
   yaml_write(list(script = cmp$script,
                   resources = cmp$resources,
                   artefacts = list(list(
