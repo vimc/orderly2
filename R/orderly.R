@@ -66,8 +66,6 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
-  ## TODO: fairly sure we're not correctly validating the schema here,
-  ## try with invalid type for displayname, for example.
   custom_metadata <- to_json(orderly_custom_metadata(dat))
 
   expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
@@ -133,8 +131,8 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
     packages = custom_packages,
     global = custom_global,
     role = custom_role,
-    display_name = orderly_yml_dat$display_name,
-    description = orderly_yml_dat$description,
+    displayname = scalar(orderly_yml_dat$displayname),
+    description = scalar(orderly_yml_dat$description),
     custom = NULL)
 }
 
