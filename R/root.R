@@ -17,7 +17,7 @@
 ##   well at the moment
 ##
 ## Things that will probably come in without too much change:
-## 
+##
 ## * fields - custom fields
 ## * vault - vault configuration
 ## * global_resources - might be the first bit to come back in?

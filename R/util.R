@@ -21,3 +21,19 @@ squote <- function(x) {
 data_frame <- function(...) {
   data.frame(..., stringsAsFactors = FALSE, check.names = FALSE)
 }
+
+
+scalar <- function(x) {
+  jsonlite::unbox(x)
+}
+
+
+to_json <- function(obj) {
+  jsonlite::toJSON(obj, pretty = FALSE, auto_unbox = FALSE, na = "null",
+                   null = "null")
+}
+
+
+rep_along <- function(x, v) {
+  rep_len(x, length(v))
+}
