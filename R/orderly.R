@@ -66,6 +66,7 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
+  dat$depends <- resolve_dependencies(dat$depends, parameters, root)
   custom_metadata <- to_json(orderly_custom_metadata(dat))
 
   expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
@@ -97,6 +98,11 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
         sys.source(s, envir = envir)
       }
     })
+    for (i in seq_len(NROW(dat$depends))) {
+      outpack::outpack_packet_use_dependency(dat$depends$id[[i]],
+                                             dat$depends$files[[i]])
+    }
+
     outpack::outpack_packet_run(dat$script, envir)
     check_produced_files(path, expected, outpack::outpack_packet_file_list())
     outpack::outpack_packet_end()
@@ -117,14 +123,28 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
   custom_packages <- orderly_yml_dat$packages %||% character()
   custom_global <- list()
 
+  ## TODO: possibly we should track the queries that resolved
+  ## different dependencies. We do this in orderly but have never used
+  ## this information. It might be better to add this to outpack
+  ## though?
+
   ## Not yet handled here: global, readme
+  if (is.null(orderly_yml_dat$depends)) {
+    depends_files <- NULL
+  } else {
+    depends_files <- unlist(lapply(orderly_yml_dat$depends$files, names))
+  }
   custom_role <- data_frame(
-    path = c("orderly.yml", orderly_yml_dat$script,
+    path = c("orderly.yml",
+             orderly_yml_dat$script,
              orderly_yml_dat$sources,
-             orderly_yml_dat$resources),
-    role = c("orderly_yml", "script",
+             orderly_yml_dat$resources,
+             depends_files),
+    role = c("orderly_yml",
+             "script",
              rep_along("source", orderly_yml_dat$sources),
-             rep_along("resource", orderly_yml_dat$resources)))
+             rep_along("resource", orderly_yml_dat$resources),
+             rep_along("dependency", depends_files)))
 
   list(
     artefacts = custom_artefacts,
@@ -181,4 +201,28 @@ check_parameters <- function(parameters, info) {
   use_default <- setdiff(has_default, names(parameters))
   parameters[use_default] <- lapply(info[use_default], "[[", "default")
   parameters[names(info)]
+}
+
+
+resolve_dependency <- function(name, query, parameters, root) {
+  ## TODO, fails if outpack query is an id!
+  ##
+  ## TODO, pass location information through too, and join them into the scope.
+  ##
+  ## TODO: can we limit by being local/not?
+  scope <- bquote(name == .(name))
+  outpack::outpack_query(query, parameters, scope, root$outpack)
+}
+
+
+resolve_dependencies <- function(depends, parameters, root) {
+  if (is.null(depends)) {
+    return(NULL)
+  }
+  depends$query <- depends$id
+  for (i in seq_len(nrow(depends))) {
+    depends$id[[i]] <- resolve_dependency(depends$name[[i]], depends$query[[i]],
+                                          parameters, root)
+  }
+  depends
 }
