@@ -311,8 +311,9 @@ test_that("Dependencies can be declared", {
   dat <- orderly_yml_read("depend", file.path(path, "src", "depend"))
   expect_equal(
     dat$depends,
-    data.frame(id = "latest", name = "minimal", filename = "mygraph.png",
-               as = "graph.png"))
+    data_frame(id = "latest",
+               name = "minimal",
+               files = I(list(c(graph.png = "mygraph.png")))))
 })
 
 

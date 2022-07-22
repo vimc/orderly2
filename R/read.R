@@ -236,11 +236,9 @@ recipe_validate_depend1 <- function(depend, filename) {
                  filename, name),
          call. = FALSE)
   }
+  files <- list_to_character(depend$use)
 
-  data_frame(id = depend$id,
-             name = name,
-             filename = list_to_character(depend$use, FALSE),
-             as = names(depend$use))
+  data_frame(id = depend$id, name = name, files = I(list(files)))
 }
 
 

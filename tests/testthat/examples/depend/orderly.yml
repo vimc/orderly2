@@ -2,7 +2,7 @@ script: script.R
 artefacts:
   staticgraph:
     description: A graph of things
-    filenames: mygraph.png
+    filenames: graph.png
 depends:
   - minimal:
       id: latest
