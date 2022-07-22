@@ -205,13 +205,10 @@ check_parameters <- function(parameters, info) {
 
 
 resolve_dependency <- function(name, query, parameters, root) {
-  ## TODO, fails if outpack query is an id!
-  ##
   ## TODO, pass location information through too, and join them into the scope.
-  ##
-  ## TODO: can we limit by being local/not?
   scope <- bquote(name == .(name))
-  outpack::outpack_query(query, parameters, scope, root$outpack)
+  outpack::outpack_query(query, parameters, scope,
+                         require_unpacked = TRUE, root = root$outpack)
 }
 
 

@@ -16,7 +16,7 @@ Imports:
     fs,
     jsonlite,
     orderly,
-    outpack (>= 0.1.2),
+    outpack (>= 0.1.3),
     yaml
 Suggests:
     jsonvalidate (>= 1.4.0),
@@ -25,5 +25,5 @@ Suggests:
     withr
 Config/testthat/edition: 3
 Remotes:
-    mrc-ide/outpack,
+    mrc-ide/outpack@mrc-3456,
     ropensci/jsonvalidate
