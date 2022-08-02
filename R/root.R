@@ -47,14 +47,3 @@ orderly_init <- function(path) {
   file.create(file.path(path, "orderly_config.yml"))
   orderly_root(path, locate = FALSE)
 }
-
-
-orderly_config <- function(path) {
-  filename <- file.path(path, "orderly_config.yml")
-  assert_file_exists("orderly_config.yml", workdir = path)
-  dat <- yaml_read(filename)
-  if (length(dat) > 0) {
-    stop("No configuration options are currently supported")
-  }
-  NULL
-}

@@ -61,7 +61,7 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   root <- orderly_root(root, locate)
 
   src <- file.path(root$path, "src", name)
-  dat <- orderly_yml_read(name, src)
+  dat <- orderly_yml_read(name, src, root)
 
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
@@ -76,7 +76,15 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   fs::dir_create(path)
 
   fs::dir_create(file.path(path, dirname(inputs)))
+  ## TODO: I don't think this copes with things within directories?
   fs::file_copy(file.path(src, inputs), path)
+
+  if (!is.null(dat$global_resources)) {
+    fs::dir_create(file.path(path, dirname(dat$global_resources$here)))
+    fs::file_copy(dat$global_resources$path,
+                  file.path(path, dat$global_resources$here))
+    inputs <- c(inputs, dat$global_resources$here)
+  }
 
   envir <- envir %||% .GlobalEnv
   assert_is(envir, "environment")
@@ -90,6 +98,7 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
     outpack::outpack_packet_file_mark(inputs, "immutable")
     outpack::outpack_packet_add_custom("orderly", custom_metadata,
                                        custom_metadata_schema())
+
     for (p in dat$packages) {
       library(p, character.only = TRUE)
     }
@@ -122,14 +131,18 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
          paths = x$filenames)
   })
   custom_packages <- orderly_yml_dat$packages %||% character()
-  custom_global <- list()
+  if (is.null(orderly_yml_dat$global_resources)) {
+    custom_global <- list()
+  } else {
+    custom_global <- orderly_yml_dat$global_resources[c("here", "there")]
+  }
 
   ## TODO: possibly we should track the queries that resolved
   ## different dependencies. We do this in orderly but have never used
   ## this information. It might be better to add this to outpack
   ## though?
 
-  ## Not yet handled here: global, readme
+  ## Not yet handled here: readme
   if (is.null(orderly_yml_dat$depends)) {
     depends_files <- NULL
   } else {
@@ -138,11 +151,14 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
   custom_role <- data_frame(
     path = c("orderly.yml",
              orderly_yml_dat$script,
+             orderly_yml_dat$global_resources$here,
              orderly_yml_dat$sources,
              orderly_yml_dat$resources,
              depends_files),
     role = c("orderly_yml",
              "script",
+             rep_along("global_resource",
+                       orderly_yml_dat$global_resources$here),
              rep_along("source", orderly_yml_dat$sources),
              rep_along("resource", orderly_yml_dat$resources),
              rep_along("dependency", depends_files)))

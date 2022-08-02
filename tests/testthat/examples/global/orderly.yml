@@ -1,0 +1,9 @@
+global_resources:
+  global_data.csv: data.csv
+
+script: script.R
+
+artefacts:
+  staticgraph:
+    description: A graph of things
+    filenames: mygraph.png

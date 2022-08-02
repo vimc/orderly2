@@ -7,6 +7,11 @@ test_prepare_orderly_example <- function(examples, ...) {
   tmp <- tempfile()
   withr::defer_parent(unlink(tmp, recursive = TRUE))
   orderly_init(tmp)
+  if ("global" %in% examples) {
+    writeLines("global_resources: global", file.path(tmp, "orderly_config.yml"))
+    fs::dir_create(file.path(tmp, "global"))
+    fs::file_copy("examples/minimal/data.csv", file.path(tmp, "global"))
+  }
   fs::dir_create(file.path(tmp, "src"))
   for (i in examples) {
     fs::dir_copy(file.path("examples", i), file.path(tmp, "src"))
@@ -28,4 +33,9 @@ json_to_df <- function(x) {
   dat <- lapply(nms, function(nm) sapply(x, "[[", nm))
   names(dat) <- nms
   as.data.frame(dat)
+}
+
+
+hash_file <- function(...) {
+  outpack:::hash_file(...)
 }

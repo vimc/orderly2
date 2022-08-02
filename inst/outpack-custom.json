@@ -54,7 +54,7 @@
                         "type": "string"
                     },
                     "role": {
-                        "enum": ["orderly_yml", "resource", "script", "source", "dependency"]
+                        "enum": ["orderly_yml", "resource", "script", "source", "dependency", "global_resource"]
                     }
                 }
             }

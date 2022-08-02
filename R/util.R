@@ -37,3 +37,9 @@ to_json <- function(obj) {
 rep_along <- function(x, v) {
   rep_len(x, length(v))
 }
+
+
+set_names <- function(x, nms) {
+  names(x) <- nms
+  x
+}
