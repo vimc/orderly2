@@ -87,7 +87,7 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
     if (!is.null(parameters)) {
       list2env(parameters, envir)
     }
-    outpack::outpack_packet_file_mark(inputs)
+    outpack::outpack_packet_file_mark(inputs, "immutable")
     outpack::outpack_packet_add_custom("orderly", custom_metadata,
                                        custom_metadata_schema())
     for (p in dat$packages) {
