@@ -117,9 +117,10 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
 
 
 orderly_custom_metadata <- function(orderly_yml_dat) {
-  custom_artefacts <- lapply(orderly_yml_dat$artefacts, function(x)
+  custom_artefacts <- lapply(orderly_yml_dat$artefacts, function(x) {
     list(description = scalar(x$description),
-         paths = x$filenames))
+         paths = x$filenames)
+  })
   custom_packages <- orderly_yml_dat$packages %||% character()
   custom_global <- list()
 
