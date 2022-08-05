@@ -206,10 +206,21 @@ check_parameters <- function(parameters, info) {
 
 
 resolve_dependency <- function(name, query, parameters, root) {
-  ## TODO, pass location information through too, and join them into the scope.
+  ## TODO, pass location information through too, and join them into
+  ## the scope, but we don't yet really have orderly remotes
+  ## (vimc-6666)
   scope <- bquote(name == .(name))
-  outpack::outpack_query(query, parameters, scope,
-                         require_unpacked = TRUE, root = root$outpack)
+  ## TODO: tell outpack we expect a single value (mrc-3493)
+  id <- outpack::outpack_query(query, parameters, scope,
+                               require_unpacked = TRUE, root = root$outpack)
+  if (is.na(id)) {
+    ## TODO: this friendlier to the user (mrc-3492)
+    if (is.na(id)) {
+      stop(sprintf("Failed to resolve dependency '%s:%s'",
+                   name, query), call. = FALSE)
+    }
+  }
+  id
 }
 
 

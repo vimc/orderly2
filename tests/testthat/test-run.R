@@ -170,3 +170,12 @@ test_that("can run packet with dependency", {
   expect_true(file.exists(
     file.path(path, "archive", "depend", id2, "graph.png")))
 })
+
+
+test_that("can fail with informative error if dependency not found", {
+  path <- test_prepare_orderly_example(c("minimal", "depend"))
+  env <- new.env()
+  expect_error(
+    orderly_run("depend", root = path, envir = env),
+    "Failed to resolve dependency 'minimal:latest'")
+})
