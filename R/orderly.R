@@ -214,11 +214,8 @@ resolve_dependency <- function(name, query, parameters, root) {
   id <- outpack::outpack_query(query, parameters, scope,
                                require_unpacked = TRUE, root = root$outpack)
   if (is.na(id)) {
-    ## TODO: this friendlier to the user (mrc-3492)
-    if (is.na(id)) {
-      stop(sprintf("Failed to resolve dependency '%s:%s'",
-                   name, query), call. = FALSE)
-    }
+    stop(sprintf("Failed to resolve dependency '%s:%s'",
+                 name, query), call. = FALSE)
   }
   id
 }
