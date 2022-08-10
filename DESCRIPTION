@@ -16,7 +16,7 @@ Imports:
     fs,
     jsonlite,
     orderly,
-    outpack (>= 0.1.1),
+    outpack (>= 0.1.5),
     yaml
 Suggests:
     jsonvalidate (>= 1.4.0),

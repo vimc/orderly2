@@ -154,3 +154,28 @@ test_that("clean parameters given spec", {
   expect_error(check_parameters(list(a = 1, c = 3, d = 4), info),
                "Extra parameters: 'c', 'd'")
 })
+
+
+test_that("can run packet with dependency", {
+  path <- test_prepare_orderly_example(c("minimal", "depend"))
+  env <- new.env()
+  id1 <- orderly_run("minimal", root = path, envir = env)
+  id2 <- orderly_run("depend", root = path, envir = env)
+
+  root <- orderly_root(path, FALSE)
+  meta <- root$outpack$metadata(id2, full = TRUE)
+  expect_equal(meta$depends$id, id1)
+  expect_equal(meta$depends$files[[1]],
+               data_frame(here = "graph.png", there = "mygraph.png"))
+  expect_true(file.exists(
+    file.path(path, "archive", "depend", id2, "graph.png")))
+})
+
+
+test_that("can fail with informative error if dependency not found", {
+  path <- test_prepare_orderly_example(c("minimal", "depend"))
+  env <- new.env()
+  expect_error(
+    orderly_run("depend", root = path, envir = env),
+    "Failed to resolve dependency 'minimal:latest'")
+})
