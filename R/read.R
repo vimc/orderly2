@@ -403,21 +403,3 @@ is_global_rm <- function(expr) {
     is.recursive(expr[[2]]) &&
     identical(expr[[2]][[1]], quote(ls))
 }
-
-
-resource_expand_dir <- function(resources) {
-  is_dir <- is_directory(resources)
-
-  if (any(is_dir)) {
-    is_trailing <- is_dir & grepl(pattern = "(\\/)$", resources)
-    resources[is_trailing] <- sub("(\\/)$", "", resources[is_trailing])
-
-    resources <- as.list(resources)
-    resources[is_dir] <- lapply(resources[is_dir], function(p) {
-      file.path(p, dir(p, recursive = TRUE, all.files = TRUE, no.. = TRUE))
-    })
-    resources <- unlist(resources)
-  }
-
-  resources
-}
