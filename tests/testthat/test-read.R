@@ -357,3 +357,19 @@ test_that("Can read orderly.yml that uses global resources", {
   expect_equal(dat$global_resources$there, "data.csv")
   expect_true(file.exists(dat$global_resources$path))
 })
+
+
+test_that("prevent use of directories", {
+  ## A bit of a tedious test setup here, as the number of examples
+  ## grows we'll robably find patterns to make this less grim.
+  tmp <- test_prepare_orderly_example("global")
+  dir.create(file.path(tmp, "global", "dir"))
+  file.create(file.path(tmp, "global", "dir", c("a", "b")))
+  path_yml <- file.path(tmp, "src", "global", "orderly.yml")
+  yml <- readLines(path_yml)
+  writeLines(gsub("data.csv", "dir", yml), path_yml)
+  root <- orderly_root(tmp, FALSE)
+  expect_error(
+    orderly_yml_read("global", file.path(tmp, "src", "global"), root = root),
+    "global resources cannot yet be directories")
+})
