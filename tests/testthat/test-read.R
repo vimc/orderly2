@@ -22,7 +22,7 @@ test_that("prevent use of 'rm(list = ls())' at top level", {
     "Do not use 'rm(list = ls())' or similar in your script (script.R:1)",
     fixed = TRUE)
   expect_message(
-    orderly_yml_read("minimal", dirname(path_script), TRUE),
+    orderly_yml_read("minimal", dirname(path_script), develop = TRUE),
     "Do not use 'rm(list = ls())' or similar in your script (script.R:1)",
     fixed = TRUE)
 })
