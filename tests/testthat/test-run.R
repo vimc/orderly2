@@ -164,7 +164,7 @@ test_that("can run packet with dependency", {
 
   root <- orderly_root(path, FALSE)
   meta <- root$outpack$metadata(id2, full = TRUE)
-  expect_equal(meta$depends$id, id1)
+  expect_equal(meta$depends$packet, id1)
   expect_equal(meta$depends$files[[1]],
                data_frame(here = "graph.png", there = "mygraph.png"))
   expect_true(file.exists(
