@@ -334,3 +334,26 @@ test_that("Validate use", {
       list(a = list(id = "id", use = list(to = c("x", "y")))), "orderly.yml"),
     "orderly.yml:depends:a:use must all be single strings")
 })
+
+
+test_that("Can't use global resources if not supported", {
+  path <- "examples/global"
+  expect_error(
+    orderly_yml_read("global", path, root = list()),
+    "'global_resources' is not supported; please edit orderly_config.yml")
+})
+
+
+test_that("Can read orderly.yml that uses global resources", {
+  ## We need the file to really exist, and the global directory with
+  ## it, so this is a bit awkward:
+  path <- "examples/global"
+  root <- list(path = normalizePath("examples"),
+               config = list(global_resources = "minimal"))
+  dat <- orderly_yml_read("global", path, root = root)
+  expect_s3_class(dat$global_resources, "data.frame")
+  expect_equal(nrow(dat$global_resources), 1)
+  expect_equal(dat$global_resources$here, "global_data.csv")
+  expect_equal(dat$global_resources$there, "data.csv")
+  expect_true(file.exists(dat$global_resources$path))
+})
