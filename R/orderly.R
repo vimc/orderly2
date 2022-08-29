@@ -157,8 +157,7 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
              depends_files),
     role = c("orderly_yml",
              "script",
-             rep_along("global_resource",
-                       orderly_yml_dat$global_resources$here),
+             rep_along("global", orderly_yml_dat$global_resources$here),
              rep_along("source", orderly_yml_dat$sources),
              rep_along("resource", orderly_yml_dat$resources),
              rep_along("dependency", depends_files)))

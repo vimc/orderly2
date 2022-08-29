@@ -200,8 +200,8 @@ test_that("can use global resources", {
   role <- data_frame(
     role = vapply(meta$custom$orderly$role, "[[", "", "role"),
     path = vapply(meta$custom$orderly$role, "[[", "", "path"))
-  expect_equal(sum(role$role == "global_resource"), 1)
-  expect_equal(role$path[role$role == "global_resource"], "global_data.csv")
+  expect_equal(sum(role$role == "global"), 1)
+  expect_equal(role$path[role$role == "global"], "global_data.csv")
 
   expect_equal(meta$custom$orderly$global,
                list(list(here = "global_data.csv",
