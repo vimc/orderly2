@@ -413,8 +413,9 @@ resource_expand_dir <- function(resources) {
     resources[is_trailing] <- sub("(\\/)$", "", resources[is_trailing])
 
     resources <- as.list(resources)
-    resources[is_dir] <- lapply(resources[is_dir], function(p)
-      file.path(p, dir(p, recursive = TRUE, all.files = TRUE, no.. = TRUE)))
+    resources[is_dir] <- lapply(resources[is_dir], function(p) {
+      file.path(p, dir(p, recursive = TRUE, all.files = TRUE, no.. = TRUE))
+    })
     resources <- unlist(resources)
   }
 
