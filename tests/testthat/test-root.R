@@ -4,7 +4,7 @@ test_that("Configuration must be empty", {
   fs::dir_create(tmp)
   writeLines("a: 1", file.path(tmp, "orderly_config.yml"))
   expect_error(orderly_config(tmp),
-               "No configuration options are currently supported")
+               "Unknown fields in .+: a")
 })
 
 
@@ -14,9 +14,9 @@ test_that("Configuration must exist", {
   fs::dir_create(tmp)
   outpack::outpack_init(tmp)
   expect_error(orderly_config(tmp),
-               "File does not exist: 'orderly_config.yml'")
+               "Orderly configuration does not exist: 'orderly_config.yml'")
   expect_error(orderly_root(tmp, FALSE),
-               "File does not exist: 'orderly_config.yml'")
+               "Orderly configuration does not exist: 'orderly_config.yml'")
 })
 
 
@@ -37,5 +37,5 @@ test_that("Can initialise a new orderly root", {
   expect_true(file.exists(tmp))
   expect_s3_class(root, "orderly_root")
   expect_s3_class(root$outpack, "outpack_root")
-  expect_null(root$config)
+  expect_equal(root$config, list())
 })

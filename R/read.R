@@ -1,20 +1,9 @@
 ## It would be nice, if we're sorting this, to:
-
+##
 ## * require a few tweaks to how the yml is written as there will be a
 ##   changes so might as well require a few more
 ## * fully separate parse from on-disk validation
-
-## Strictly, we need config here too:
-##
-## - custom fields
-## - database tables, views and connections
-## - global resources
-## - tags
-## - secrets
-## - migration
-##
-## We're not yet handling them here, so will pass on this.
-orderly_yml_read <- function(name, path, develop = FALSE) {
+orderly_yml_read <- function(name, path, root, develop = FALSE) {
   filename <- file.path(path, "orderly.yml")
   assert_is_directory(basename(path), workdir = dirname(path),
                       name = "Report working directory")
@@ -29,7 +18,6 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
 
   ## Remaining to implement from orderly:
 
-  ## * global_resources (requires a little bit more configuration control)
   ## * fields (custom fields have not been super useful, also configuration)
   ## * tags (we'll probably remove these)
   ## * environment (not sure how widely used this is)
@@ -49,7 +37,8 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
     parameters = orderly_yml_validate_parameters,
     resources = orderly_yml_validate_resources,
     depends = orderly_yml_validate_depends,
-    artefacts = orderly_yml_validate_artefacts)
+    artefacts = orderly_yml_validate_artefacts,
+    global_resources = orderly_yml_validate_global_resources)
 
   dat <- list(name = name,
               path = path)
@@ -62,7 +51,7 @@ orderly_yml_read <- function(name, path, develop = FALSE) {
   for (x in names(check)) {
     pass_on_develop(
       develop,
-      dat[[x]] <- check[[x]](raw[[x]], filename))
+      dat[[x]] <- check[[x]](raw[[x]], filename, root))
   }
 
   ## In orderly there's a little extra processing that happens here:
@@ -85,7 +74,7 @@ pass_on_develop <- function(develop, expr) {
 }
 
 
-orderly_yml_validate_script <- function(script, filename) {
+orderly_yml_validate_script <- function(script, filename, root) {
   assert_scalar_character(script, sprintf("%s:script", filename))
   assert_file_exists(script, name = "Script file")
   exprs <- parse(file = script, keep.source = TRUE)
@@ -104,7 +93,7 @@ orderly_yml_validate_script <- function(script, filename) {
 
 ## Later on we need to expand this to support more options about
 ## package versions etc.
-orderly_yml_validate_packages <- function(packages, filename) {
+orderly_yml_validate_packages <- function(packages, filename, root) {
   if (is.null(packages)) {
     return(NULL)
   }
@@ -113,7 +102,7 @@ orderly_yml_validate_packages <- function(packages, filename) {
 }
 
 
-orderly_yml_validate_sources <- function(sources, filename) {
+orderly_yml_validate_sources <- function(sources, filename, root) {
   if (is.null(sources)) {
     return()
   }
@@ -122,7 +111,7 @@ orderly_yml_validate_sources <- function(sources, filename) {
   sources
 }
 
-orderly_yml_validate_displayname <- function(displayname, filename) {
+orderly_yml_validate_displayname <- function(displayname, filename, root) {
   if (is.null(displayname)) {
     return(NULL)
   }
@@ -131,7 +120,7 @@ orderly_yml_validate_displayname <- function(displayname, filename) {
 }
 
 
-orderly_yml_validate_description <- function(description, filename) {
+orderly_yml_validate_description <- function(description, filename, root) {
   if (is.null(description)) {
     return(NULL)
   }
@@ -140,7 +129,7 @@ orderly_yml_validate_description <- function(description, filename) {
 }
 
 
-orderly_yml_validate_parameters <- function(parameters, filename) {
+orderly_yml_validate_parameters <- function(parameters, filename, root) {
   if (is.null(parameters) || length(parameters) == 0L) {
     return(NULL)
   }
@@ -161,7 +150,7 @@ orderly_yml_validate_parameters <- function(parameters, filename) {
 }
 
 
-orderly_yml_validate_resources <- function(resources, filename) {
+orderly_yml_validate_resources <- function(resources, filename, root) {
   if (is.null(resources)) {
     return(NULL)
   }
@@ -191,6 +180,8 @@ orderly_yml_validate_resources <- function(resources, filename) {
     resources <- resources[!i]
   }
 
+  ## TODO: what happens here about README files that get expanded,
+  ## these are not dealt with well at present!
   if (any(is_dir)) {
     resources <- as.list(resources)
     resources[is_dir] <- lapply(resources[is_dir], function(p)
@@ -202,7 +193,7 @@ orderly_yml_validate_resources <- function(resources, filename) {
 }
 
 
-orderly_yml_validate_depends <- function(depends, filename) {
+orderly_yml_validate_depends <- function(depends, filename, root) {
   if (is.null(depends)) {
     return(NULL)
   }
@@ -253,7 +244,7 @@ recipe_validate_depend1 <- function(depend, filename) {
 ##       - filename.png
 ##
 ## Which is simpler and will be easier to edit.
-orderly_yml_validate_artefacts <- function(artefacts, filename) {
+orderly_yml_validate_artefacts <- function(artefacts, filename, root) {
   if (length(artefacts) == 0L) {
     stop("At least one artefact required")
   }
@@ -356,6 +347,48 @@ orderly_yml_validate_artefact1 <- function(artefact, filename) {
   }
 
   artefact[c("filenames", "description", "format")]
+}
+
+
+orderly_yml_validate_global_resources <- function(global_resources, filename,
+                                                  root) {
+  if (is.null(global_resources)) {
+    return(NULL)
+  }
+
+  if (is.null(root$config$global_resources)) {
+    stop(paste("'global_resources' is not supported;",
+               "please edit orderly_config.yml to enable"),
+         call. = FALSE)
+  }
+
+  prefix <- sprintf("%s:global_resources", filename)
+
+  assert_named(global_resources, name = prefix)
+  for (i in seq_along(global_resources)) {
+    assert_scalar_character(
+      global_resources[[i]],
+      sprintf("%s:%s", prefix, names(global_resources)[[i]]))
+  }
+
+  here <- names(global_resources)
+  there <- list_to_character(global_resources, named = FALSE)
+
+  global_path <- file.path(root$path, root$config$global_resources)
+  assert_file_exists(
+    there, check_case = TRUE, workdir = global_path,
+    name = sprintf("Global resources in '%s'", global_path))
+
+  ## TODO: this is really easy, we just expand at this point; reuse
+  ## same logic (trailing slash check, plus expansion) as
+  ## orderly_yml_validate_resources, copying it into it's own function
+  if (any(is_directory(file.path(global_path, global_resources)))) {
+    stop("global resources cannot yet be directories")
+  }
+
+  data_frame(here = here,
+             there = there,
+             path = file.path(global_path, there))
 }
 
 

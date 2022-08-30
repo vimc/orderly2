@@ -164,7 +164,7 @@ test_that("can run packet with dependency", {
 
   root <- orderly_root(path, FALSE)
   meta <- root$outpack$metadata(id2, full = TRUE)
-  expect_equal(meta$depends$id, id1)
+  expect_equal(meta$depends$packet, id1)
   expect_equal(meta$depends$files[[1]],
                data_frame(here = "graph.png", there = "mygraph.png"))
   expect_true(file.exists(
@@ -178,4 +178,32 @@ test_that("can fail with informative error if dependency not found", {
   expect_error(
     orderly_run("depend", root = path, envir = env),
     "Failed to resolve dependency 'minimal:latest'")
+})
+
+
+test_that("can use global resources", {
+  path <- test_prepare_orderly_example("global")
+  id <- orderly_run("global", root = path)
+
+  ## File copied and renamed
+  path_dst <- file.path(path, "archive", "global", id, "global_data.csv")
+  expect_true(file.exists(path_dst))
+  expect_equal(hash_file(path_dst),
+               hash_file(file.path(path, "global", "data.csv")))
+
+  ## Added to metadata:
+  root <- orderly_root(path, FALSE)
+  meta <- root$outpack$metadata(id, full = TRUE)
+
+  ## TODO: we should have some sort of custom metadata deserialisation
+  ## help
+  role <- data_frame(
+    role = vapply(meta$custom$orderly$role, "[[", "", "role"),
+    path = vapply(meta$custom$orderly$role, "[[", "", "path"))
+  expect_equal(sum(role$role == "global"), 1)
+  expect_equal(role$path[role$role == "global"], "global_data.csv")
+
+  expect_equal(meta$custom$orderly$global,
+               list(list(here = "global_data.csv",
+                         there = "data.csv")))
 })

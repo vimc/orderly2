@@ -22,7 +22,7 @@ test_that("prevent use of 'rm(list = ls())' at top level", {
     "Do not use 'rm(list = ls())' or similar in your script (script.R:1)",
     fixed = TRUE)
   expect_message(
-    orderly_yml_read("minimal", dirname(path_script), TRUE),
+    orderly_yml_read("minimal", dirname(path_script), develop = TRUE),
     "Do not use 'rm(list = ls())' or similar in your script (script.R:1)",
     fixed = TRUE)
 })
@@ -333,4 +333,43 @@ test_that("Validate use", {
     orderly_yml_validate_depends(
       list(a = list(id = "id", use = list(to = c("x", "y")))), "orderly.yml"),
     "orderly.yml:depends:a:use must all be single strings")
+})
+
+
+test_that("Can't use global resources if not supported", {
+  path <- "examples/global"
+  expect_error(
+    orderly_yml_read("global", path, root = list()),
+    "'global_resources' is not supported; please edit orderly_config.yml")
+})
+
+
+test_that("Can read orderly.yml that uses global resources", {
+  ## We need the file to really exist, and the global directory with
+  ## it, so this is a bit awkward:
+  path <- "examples/global"
+  root <- list(path = normalizePath("examples"),
+               config = list(global_resources = "minimal"))
+  dat <- orderly_yml_read("global", path, root = root)
+  expect_s3_class(dat$global_resources, "data.frame")
+  expect_equal(nrow(dat$global_resources), 1)
+  expect_equal(dat$global_resources$here, "global_data.csv")
+  expect_equal(dat$global_resources$there, "data.csv")
+  expect_true(file.exists(dat$global_resources$path))
+})
+
+
+test_that("prevent use of directories", {
+  ## A bit of a tedious test setup here, as the number of examples
+  ## grows we'll robably find patterns to make this less grim.
+  tmp <- test_prepare_orderly_example("global")
+  dir.create(file.path(tmp, "global", "dir"))
+  file.create(file.path(tmp, "global", "dir", c("a", "b")))
+  path_yml <- file.path(tmp, "src", "global", "orderly.yml")
+  yml <- readLines(path_yml)
+  writeLines(gsub("data.csv", "dir", yml), path_yml)
+  root <- orderly_root(tmp, FALSE)
+  expect_error(
+    orderly_yml_read("global", file.path(tmp, "src", "global"), root = root),
+    "global resources cannot yet be directories")
 })
