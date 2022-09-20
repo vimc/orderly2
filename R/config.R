@@ -13,20 +13,34 @@ orderly_config_yml_read <- function(path) {
   owd <- setwd(path)
   on.exit(setwd(owd))
 
+  assert_named(raw)
+  plugins <- orderly_config_validate_plugins(raw$plugins, filename)
+  check <- c(list(
+    global_resources = orderly_config_validate_global_resources),
+    lapply(plugins, "[[", "check"))
+
   ## Same validation strategy as orderly_yml_read
-  check <- list(
-    global_resources = orderly_config_validate_global_resources)
   required <- character()
-  optional <- setdiff(names(check), required)
+  optional <- c("plugins", setdiff(names(check), required))
 
   check_fields(raw, filename, required, optional)
 
-  dat <- list()
+  dat <- list(plugins = plugins)
   for (x in names(check)) {
     dat[[x]] <- check[[x]](raw[[x]], filename)
   }
 
   dat
+}
+
+
+orderly_config_validate_plugins <- function(plugins, filename) {
+  if (is.null(plugins)) {
+    return(NULL)
+  }
+  assert_character(plugins, sprintf("%s:plugins", filename))
+  stopifnot(!anyDuplicated(plugins))
+  set_names(lapply(plugins, load_orderly_plugin), plugins)
 }
 
 

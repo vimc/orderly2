@@ -30,10 +30,16 @@ scalar <- function(x) {
 
 to_json <- function(obj) {
   jsonlite::toJSON(obj, pretty = FALSE, auto_unbox = FALSE, na = "null",
-                   null = "null")
+                   null = "null", json_verbatim = TRUE)
 }
 
 
 rep_along <- function(x, v) {
   rep_len(x, length(v))
+}
+
+
+set_names <- function(x, nms) {
+  names(x) <- nms
+  x
 }

@@ -66,8 +66,18 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
+  ## This feels a little weird - the other way to do this would be to
+  ## reorganise the data on read to put all plugins into a single
+  ## plugins key? We could apply that same approach to the
+  ## configuration too?
+  plugins <- intersect(names(root$config$plugins), names(dat))
+
+  ## for (p in root$config$plugins) {
+  ##   p$prepare()
+  ## }
+
   dat$depends <- resolve_dependencies(dat$depends, parameters, root)
-  custom_metadata <- to_json(orderly_custom_metadata(dat))
+  custom_metadata <- orderly_custom_metadata(dat)
 
   expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
 
@@ -96,7 +106,19 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
       list2env(parameters, envir)
     }
     outpack::outpack_packet_file_mark(inputs, "immutable")
-    outpack::outpack_packet_add_custom("orderly", custom_metadata,
+
+    ## Mutations at run time will affect the environment (either by
+    ## reading or writing), and may affect (again via reading or
+    ## writing) the disk.
+    for (p in plugins) {
+      config_p <- root$config[[p]]
+      custom_metadata$plugins[[p]] <-
+        root$config$plugins[[p]]$prepare(config_p, dat[[p]], root$envir, path)
+    }
+
+    browser()
+
+    outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
                                        custom_metadata_schema())
 
     for (p in dat$packages) {
@@ -169,7 +191,9 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
     role = custom_role,
     displayname = scalar(orderly_yml_dat$displayname),
     description = scalar(orderly_yml_dat$description),
-    custom = NULL)
+    custom = NULL,
+    ## Will get filled in later
+    plugins = list())
 }
 
 
