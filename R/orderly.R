@@ -99,6 +99,8 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   envir <- envir %||% .GlobalEnv
   assert_is(envir, "environment")
 
+  schema <- custom_metadata_schema(root$config)
+
   withCallingHandlers({
     outpack::outpack_packet_start(path, name, parameters = parameters,
                                   id = id, root = root$outpack)
@@ -110,16 +112,17 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
     ## Mutations at run time will affect the environment (either by
     ## reading or writing), and may affect (again via reading or
     ## writing) the disk.
+
+    ## TODO: again, here we have some ambiguity about whether the data
+    ## should be stored under plugins or at the top level
     for (p in plugins) {
-      config_p <- root$config[[p]]
       custom_metadata$plugins[[p]] <-
-        root$config$plugins[[p]]$prepare(config_p, dat[[p]], root$envir, path)
+        root$config$plugins[[p]]$prepare(root$config[[p]], dat[[p]],
+                                         envir, path)
     }
 
-    browser()
-
     outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
-                                       custom_metadata_schema())
+                                       schema)
 
     for (p in dat$packages) {
       library(p, character.only = TRUE)
@@ -134,6 +137,8 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
                                              dat$depends$files[[i]])
     }
 
+    ## TODO: if run fails we might not close out the device stack
+    ## here, we do need to do that to make things easy for the user.
     outpack::outpack_packet_run(dat$script, envir)
     check_produced_files(path, expected, outpack::outpack_packet_file_list())
     outpack::outpack_packet_end()

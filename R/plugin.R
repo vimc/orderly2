@@ -21,6 +21,8 @@ orderly_plugin <- function(check, read, prepare, schema = NULL) {
   assert_is(check, "function")
   if (!is.null(schema)) {
     assert_file_exists(schema, name = "Schema file")
+    schema <- paste(readLines(schema), collapse = "\n")
+    class(schema) <- "json"
   }
   ret <- list(check = check,
               read = read,

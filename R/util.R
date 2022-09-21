@@ -28,8 +28,8 @@ scalar <- function(x) {
 }
 
 
-to_json <- function(obj) {
-  jsonlite::toJSON(obj, pretty = FALSE, auto_unbox = FALSE, na = "null",
+to_json <- function(obj, pretty = FALSE) {
+  jsonlite::toJSON(obj, pretty = pretty, auto_unbox = FALSE, na = "null",
                    null = "null", json_verbatim = TRUE)
 }
 
