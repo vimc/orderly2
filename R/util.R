@@ -30,7 +30,7 @@ scalar <- function(x) {
 
 to_json <- function(obj, pretty = FALSE) {
   jsonlite::toJSON(obj, pretty = pretty, auto_unbox = FALSE, na = "null",
-                   null = "null", json_verbatim = TRUE)
+                   null = "null", json_verbatim = TRUE, digits = NA)
 }
 
 

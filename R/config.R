@@ -13,7 +13,9 @@ orderly_config_yml_read <- function(path) {
   owd <- setwd(path)
   on.exit(setwd(owd))
 
-  assert_named(raw)
+  if (!is.null(raw)) {
+    assert_named(raw)
+  }
   plugins <- orderly_config_validate_plugins(raw$plugins, filename)
   check <- c(list(
     global_resources = orderly_config_validate_global_resources),
