@@ -69,12 +69,9 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   ## This feels a little weird - the other way to do this would be to
   ## reorganise the data on read to put all plugins into a single
   ## plugins key? We could apply that same approach to the
-  ## configuration too?
+  ## configuration too? If we do this we split it into plugins/config
+  ## and plugins/data perhaps?
   plugins <- intersect(names(root$config$plugins), names(dat))
-
-  ## for (p in root$config$plugins) {
-  ##   p$prepare()
-  ## }
 
   dat$depends <- resolve_dependencies(dat$depends, parameters, root)
   custom_metadata <- orderly_custom_metadata(dat)
@@ -115,10 +112,14 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
 
     ## TODO: again, here we have some ambiguity about whether the data
     ## should be stored under plugins or at the top level
+    ##
+    ## We might want to post the entire root here, I think. We'll also
+    ## want to pass through the parameters for sure as we talked about
+    ## making these available to queries in the db version of this.
     for (p in plugins) {
       custom_metadata$plugins[[p]] <-
-        root$config$plugins[[p]]$prepare(root$config[[p]], dat[[p]],
-                                         envir, path)
+        root$config$plugins[[p]]$run(dat[[p]], root$config[[p]], envir,
+                                     parameters, path)
     }
 
     outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
