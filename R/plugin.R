@@ -50,18 +50,33 @@ orderly_plugin <- function(check, read, run, schema = NULL) {
 }
 
 
-## Missing here is version information on plugins, and plugins
-## requiring orderly versions.
+.plugins <- new.env(parent = emptyenv())
+
+
+##' Register a plugin
+##'
+##' @title Register a plugin
+##'
+##' @param plugin The plugin
+##'
+##' @param name The name, typically the package name (later this will
+##'   be made optional)
+##'
+##' @return Nothing, this is called for the side effect of registering
+##'   a plugin
+##'
+##' @export
+orderly_plugin_register <- function(plugin, name) {
+  assert_scalar_character(name)
+  assert_is(plugin, "orderly_plugin")
+  .plugins[[name]] <- plugin
+}
+
+
 load_orderly_plugin <- function(name) {
   assert_scalar_character(name)
-  re <- "^(.+)::(.+)$"
-  if (grepl(re, name)) {
-    package <- sub(re, "\\1", name)
-  } else {
-    package <- name
-  }
   if (!(name %in% names(.plugins))) {
-    loadNamespace(package)
+    loadNamespace(name)
   }
   plugin <- .plugins[[name]]
   if (is.null(plugin)) {
@@ -69,20 +84,4 @@ load_orderly_plugin <- function(name) {
   }
 
   plugin
-}
-
-
-.plugins <- new.env(parent = emptyenv())
-
-## TODO: infer the package part
-orderly_register_plugin <- function(package, value, name = NULL) {
-  assert_scalar_character(package)
-  if (is.null(name)) {
-    name <- package
-  } else {
-    assert_scalar_character(name)
-    name <- sprintf("%s::%s", package, name)
-  }
-  assert_is(value, "orderly_plugin")
-  .plugins[[name]] <- value
 }

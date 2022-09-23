@@ -40,9 +40,19 @@ orderly_config_validate_plugins <- function(plugins, filename) {
   if (is.null(plugins)) {
     return(NULL)
   }
-  assert_character(plugins, sprintf("%s:plugins", filename))
-  stopifnot(!anyDuplicated(plugins))
-  set_names(lapply(plugins, load_orderly_plugin), plugins)
+  assert_named(plugins, unique = TRUE, name = sprintf("%s:plugins", filename))
+  for (nm in names(plugins)) {
+    check_fields(plugins[[nm]], sprintf("%s:plugins:%s", filename, nm),
+                 NULL, NULL)
+  }
+
+  ## Once we support additional fields in the validation, this call
+  ## will get more complicated.
+  ret <- list()
+  for (nm in names(plugins)) {
+    ret[[nm]] <- load_orderly_plugin(nm)
+  }
+  ret
 }
 
 
