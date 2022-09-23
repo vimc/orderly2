@@ -3,8 +3,8 @@ test_that("Can run simple example with plugin", {
 
   writeLines(c(
     "plugins:",
-    "  - orderly2.random",
-    "orderly2.random:",
+    "  example.random: ~",
+    "example.random:",
     "  distribution:",
     "    normal"),
     file.path(path, "orderly_config.yml"))
@@ -14,7 +14,7 @@ test_that("Can run simple example with plugin", {
     "  data:",
     "    description: Generated data",
     "    filenames: data.rds",
-    "orderly2.random:",
+    "example.random:",
     "  dat: 10"),
     file.path(path, "src/minimal/orderly.yml"))
   writeLines(
@@ -38,7 +38,7 @@ test_that("Can run simple example with plugin", {
   ## of deserialising json, into R but at least it's all there.
   ## Probably the most general solution involves plugins being able to
   ## provide deserialisers that can apply any required simplification?
-  expect_equal(meta$custom$orderly$plugins$orderly2.random,
+  expect_equal(meta$custom$orderly$plugins$example.random,
                list(dat = list(mean(cmp), var(cmp))))
   expect_equal(readRDS(file.path(path, "archive", "minimal", id, "data.rds")),
                cmp)
