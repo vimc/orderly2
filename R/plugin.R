@@ -25,13 +25,20 @@
 ##' @param run A function to mutate the report state at runtime. This
 ##'   is evaluated at a specific point in the process that needs
 ##'   describing. It can have an effect by mutating the environment
-##'   and by creating files in the working directory.
+##'   and by creating files in the working directory. It will be
+##'   passed five arguments; (1) the data returned from the `read`
+##'   function, (2) the root object (as passed to `read`), (3) the
+##'   report environment, which your function can read and write, (4)
+##'   the parameters as passed to [orderly2::orderly_run], and (5) the
+##'   path to the working directory for the report, which your
+##'   function can use to write new files into.
 ##'
 ##' @param schema Optionally a path to a schema for the metadata
 ##'   created by this plugin.
 ##'
 ##' @return An `orderly_plugin` object, though normally this would not
-##'   be called by users.
+##'   be interacted with by users. Typically, this will be passed
+##'   directly to [orderly2::orderly_plugin_register]
 ##'
 ##' @export
 orderly_plugin <- function(check, read, run, schema = NULL) {

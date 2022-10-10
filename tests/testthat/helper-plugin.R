@@ -22,8 +22,8 @@ example_plugin <- function() {
       data
     },
 
-    run = function(data, config, envir, parameters, path) {
-      generator <- config$generator
+    run = function(data, root, parameters, envir, path) {
+      generator <- root$config[["example.random"]]$generator
       meta <- list()
       for (i in names(data)) {
         r <- generator(data[[i]])
