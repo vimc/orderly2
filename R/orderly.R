@@ -113,13 +113,11 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
     ## TODO: again, here we have some ambiguity about whether the data
     ## should be stored under plugins or at the top level
     ##
-    ## We might want to post the entire root here, I think. We'll also
-    ## want to pass through the parameters for sure as we talked about
-    ## making these available to queries in the db version of this.
+    ## TODO: where is the schema validation happening here? I think
+    ## that we need to do this afterwards?
     for (p in plugins) {
       custom_metadata$plugins[[p]] <-
-        root$config$plugins[[p]]$run(dat[[p]], root$config[[p]], envir,
-                                     parameters, path)
+        root$config$plugins[[p]]$run(dat[[p]], root, parameters, envir, path)
     }
 
     outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
