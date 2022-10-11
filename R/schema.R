@@ -19,9 +19,13 @@ custom_metadata_schema <- function(config) {
   ## reference to it, then provide a list of definitions.
   plugins <- Filter(Negate(is.null), lapply(config$plugins, "[[", "schema"))
   if (length(plugins) > 0) {
-    schema <- sub('"plugins": \\{\\s+\\}',
-                  paste('"plugins":', to_json(plugins, pretty = TRUE)),
-                  schema)
+    re <- '"plugins": \\{\\s+\\}'
+    stopifnot(grepl(re, schema))
+    str <- c('"plugins": {',
+             '  "type": "object",',
+             paste0('  "properties": ', to_json(plugins, pretty = TRUE)),
+             "}")
+    schema <- sub(re, paste(str, collapse = "\n"), schema)
   }
   schema
 }

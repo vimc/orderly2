@@ -17,7 +17,24 @@ test_that("Can run simple example with plugin", {
   ## Probably the most general solution involves plugins being able to
   ## provide deserialisers that can apply any required simplification?
   expect_equal(meta$custom$orderly$plugins$example.random,
-               list(dat = list(mean(cmp), var(cmp))))
+               list(dat = list(mean = mean(cmp),
+                               variance = var(cmp))))
   expect_equal(readRDS(file.path(path, "archive", "plugin", id, "data.rds")),
                cmp)
+})
+
+
+test_that("can validate schema", {
+  skip_if_not(getOption("outpack.schema_validate", FALSE),
+              "schema validation not enabled")
+  path <- test_prepare_orderly_example("plugin")
+  register_example_plugin()
+  .plugins$example.random$schema <-
+    sub("number", "string", .plugins$example.random$schema)
+
+  env <- new.env()
+  set.seed(1)
+  expect_error(
+    orderly_run("plugin", root = path, envir = env),
+    "Validating custom metadata failed")
 })

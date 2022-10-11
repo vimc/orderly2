@@ -303,6 +303,8 @@ orderly2::orderly_plugin_register(
 
 Now, when the orderly metadata is saved (just before running the script part of a report) we will validate output that `db_prepare` generates against the schema, if `jsonvalidate` is installed (currently this requires our development version) and if the R option `outpack.schema_validate` is set to `TRUE` (e.g., by running `options(outpack.schema_validate = TRUE)`).
 
+If you need to control serialisation of the output from the "prepare" function, you should use `jsonlite::toJSON` within that function directly and orderly2 will interpolate it verbatim into the final json (the important part of this is that it ends up as a string with class "json").
+
 # Arranging the plugin in a package
 
 Typically, a plugin should be in a package. Currently we only allow for a single plugin per package but later may relax this.
