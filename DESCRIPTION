@@ -19,11 +19,16 @@ Imports:
     outpack (>= 0.1.5),
     yaml
 Suggests:
+    DBI,
+    RSQLite,
     jsonvalidate (>= 1.4.0),
+    knitr,
     mockery,
+    rmarkdown,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
 Remotes:
     mrc-ide/outpack,
     ropensci/jsonvalidate
+VignetteBuilder: knitr
