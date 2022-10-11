@@ -28,17 +28,20 @@ example_plugin <- function() {
       for (i in names(data)) {
         r <- generator(data[[i]])
         envir[[i]] <- r
-        meta[[i]] <- c(mean(r), var(r))
+        meta[[i]] <- list(mean = mean(r), variance = var(r))
       }
-      meta
-    })
+      jsonlite::toJSON(meta, auto_unbox = TRUE, digits = NA)
+    },
+
+    schema = normalizePath("example.random.json", mustWork = TRUE))
 }
 
 
 register_example_plugin <- function() {
   dat <- example_plugin()
-  orderly_plugin_register(orderly_plugin(dat$check, dat$read, dat$run),
-                          "example.random")
+  orderly_plugin_register(
+    orderly_plugin(dat$check, dat$read, dat$run, dat$schema),
+    "example.random")
   withr::defer_parent(rm(list = "example.random", envir = .plugins))
 }
 
