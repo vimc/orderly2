@@ -1,4 +1,4 @@
-##' Create an ordery plugin. A plugin is typically defined by a
+##' Create an orderly plugin. A plugin is typically defined by a
 ##' package and is used to extend orderly by enabling new
 ##' functionality, declared in `orderly_config.yml` and `orderly.yml`
 ##' and affecting the running of reports primarily by creating new
@@ -15,7 +15,7 @@
 ##'   load. It should return a processed copy of the configuration
 ##'   data, to be passed in as the second argument to `read`.
 ##'
-##' @param read A function to read, check and prcess the configuration
+##' @param read A function to read, check and process the configuration
 ##'   section in `orderly.yml`, i.e., for a single report. It will be
 ##'   passed the data for the plugin section of `orderly.yml`, the
 ##'   full path to `orderly.yml` and also the orderly root object.

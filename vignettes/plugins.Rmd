@@ -116,7 +116,7 @@ Here is the directory structure of our minimal project
 withr::with_dir(path_root, fs::dir_tree("."))
 ```
 
-The `orderly_config.yml` file contains the information shared by all possible uses of the plugin - in thie case the connection information for the database:
+The `orderly_config.yml` file contains the information shared by all possible uses of the plugin - in the case the connection information for the database:
 
 ```{r, echo = FALSE, results = "asis"}
 yaml_output(readLines(file.path(path_root, "orderly_config.yml")))
@@ -139,7 +139,7 @@ but normally you'd be doing some calculation here, using any of the other functi
 
 To implement this we need to write three functions:
 
-(1) A "config" function to process the data from `orderly_config.yml`, primarily this is concerned with valiation so can be fairly simple at first, later we'll expand this to report errors nicely.
+(1) A "config" function to process the data from `orderly_config.yml`, primarily this is concerned with validation so can be fairly simple at first, later we'll expand this to report errors nicely.
 
 ```{r}
 db_config <- function(data, filename) {
@@ -152,7 +152,7 @@ The arguments here are
 * `data`: the deserialised section of the `orderly_config.yml` specific to this plugin
 * `filename`: the full path to `orderly_config.yml`
 
-The return value here should be the `data` argument with any auxillary data added after validation.
+The return value here should be the `data` argument with any auxiliary data added after validation.
 
 (2) A "read" function to process and validate the data from `orderly.yml` specific to this plugin, again we can make this very simple at first
 
@@ -166,9 +166,9 @@ The arguments here are
 
 * `data`: the deserialised section of `orderly.yml` specific to this plugin
 * `filename`: the full path to `orderly.yml`
-* `root`: the orderly root object. This is currently undocumented and subject to change, but can be used (theoretically) to acess other parts of the orderly configuration
+* `root`: the orderly root object. This is currently undocumented and subject to change, but can be used (theoretically) to access other parts of the orderly configuration
 
-The return value should be the `data` argument with any auxillary data added after validation.
+The return value should be the `data` argument with any auxiliary data added after validation.
 
 (3) Finally a "prepare" function that actually does the query and sets the data just before the report runs.
 
@@ -186,11 +186,11 @@ db_prepare <- function(data, root, parameters, environment, path) {
 
 The arguments here are
 
-* `data`: the configuration data as peocessed by the "read" function (here, `db_read`)
+* `data`: the configuration data as processed by the "read" function (here, `db_read`)
 * `root`: the root object, as above. From this you can access the plugin-specific configuration as `root$config$plugin.name`, substituting `plugin.name` for your plugin name (here it is `example.db`)
 * `parameters`: a named list of parameters, as passed to `orderly2::orderly_run`
 * `envir`: the report environment. You can save data here and it will be available to your report
-* `path`: the working directory for the report. You can save files here and they will be avaiable to the report
+* `path`: the working directory for the report. You can save files here and they will be available to the report
 
 The primary ways that this function will affect the running of a report is in creating objects within the report environment (by setting elements in `environment`, as we do here) or by writing files into the report running directory, using the `path` argument.
 
@@ -285,7 +285,7 @@ db_prepare <- function(data, config, environment, parameters, path) {
 }
 ```
 
-Here, we use `jsonlite::unbox` to tell the eventual serialisation that this is a scalar (so should be saved as a string or a number, not an array of length 1 containing a string or a number). You can also directly serialise to json in this function using `jsonlite::toJSON` with whatever arguments you prefer, and so long as the class of the returned object is `json` then it will be inserted correctly into the final metadata.
+Here, we use `jsonlite::unbox` to tell the eventual serialisation that this is a scalar (so should be saved as a string or a number, not an array of length 1 containing a string or a number). You can also directly serialise to JSON in this function using `jsonlite::toJSON` with whatever arguments you prefer, and so long as the class of the returned object is `json` then it will be inserted correctly into the final metadata.
 
 Taking this a step further, we can also specify a [schema](https://json-schema.org/) that this metadata will conform to
 
@@ -303,7 +303,7 @@ orderly2::orderly_plugin_register(
 
 Now, when the orderly metadata is saved (just before running the script part of a report) we will validate output that `db_prepare` generates against the schema, if `jsonvalidate` is installed (currently this requires our development version) and if the R option `outpack.schema_validate` is set to `TRUE` (e.g., by running `options(outpack.schema_validate = TRUE)`).
 
-If you need to control serialisation of the output from the "prepare" function, you should use `jsonlite::toJSON` within that function directly and orderly2 will interpolate it verbatim into the final json (the important part of this is that it ends up as a string with class "json").
+If you need to control serialisation of the output from the "prepare" function, you should use `jsonlite::toJSON` within that function directly and orderly2 will interpolate it verbatim into the final JSON (the important part of this is that it ends up as a string with class `json`).
 
 # Arranging the plugin in a package
 
@@ -376,7 +376,7 @@ r_output(readLines(file.path(path_pkg, "plugin.R")))
 Our need for this functionality are similar to this example - pulling out the database functionality from the original version of orderly into something that is more independent, as it turns out to be useful only in a fraction of orderly use-cases. We can imagine other potential uses though, such as:
 
 * Non-DBI-based database data extraction, or customised routines for pulling data from a database
-* Download files from some shared location just before use (e.g., sharepoint, onedrive, aws). The `orderly_config.yml` would contain account connection details and `orderly.yml` would contain mapping between the remote data/files and local files. Rather than writing to the environment as we do above, use the `path` argument to copy files into the correct place.
-* Pull data from some web api just before running
+* Download files from some shared location just before use (e.g., SharePoint, OneDrive, AWS). The `orderly_config.yml` would contain account connection details and `orderly.yml` would contain mapping between the remote data/files and local files. Rather than writing to the environment as we do above, use the `path` argument to copy files into the correct place.
+* Pull data from some web API just before running
 
 These all follow the same basic pattern of requiring some configuration in order to be able to connect to the resource service, some specification of what resources are to be fetched, and some action to actually fetch the resource and put it into place.

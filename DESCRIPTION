@@ -32,3 +32,4 @@ Remotes:
     mrc-ide/outpack,
     ropensci/jsonvalidate
 VignetteBuilder: knitr
+Language: en-GB

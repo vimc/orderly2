@@ -7,7 +7,7 @@
 orderly_plugin(check, read, run, schema = NULL)
 }
 \arguments{
-\item{read}{A function to read, check and prcess the configuration
+\item{read}{A function to read, check and process the configuration
 section in \code{orderly.yml}, i.e., for a single report. It will be
 passed the data for the plugin section of \code{orderly.yml}, the
 full path to \code{orderly.yml} and also the orderly root object.
@@ -17,7 +17,13 @@ to change! It should return the processed}
 \item{run}{A function to mutate the report state at runtime. This
 is evaluated at a specific point in the process that needs
 describing. It can have an effect by mutating the environment
-and by creating files in the working directory.}
+and by creating files in the working directory. It will be
+passed five arguments; (1) the data returned from the \code{read}
+function, (2) the root object (as passed to \code{read}), (3) the
+report environment, which your function can read and write, (4)
+the parameters as passed to \link{orderly_run}, and (5) the
+path to the working directory for the report, which your
+function can use to write new files into.}
 
 \item{schema}{Optionally a path to a schema for the metadata
 created by this plugin.}
@@ -33,10 +39,11 @@ data, to be passed in as the second argument to \code{read}.}
 }
 \value{
 An \code{orderly_plugin} object, though normally this would not
-be called by users.
+be interacted with by users. Typically, this will be passed
+directly to \link{orderly_plugin_register}
 }
 \description{
-Create an ordery plugin. A plugin is typically defined by a
+Create an orderly plugin. A plugin is typically defined by a
 package and is used to extend orderly by enabling new
 functionality, declared in \code{orderly_config.yml} and \code{orderly.yml}
 and affecting the running of reports primarily by creating new
