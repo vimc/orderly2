@@ -130,7 +130,6 @@ yaml_output(readLines(file.path(path_example, "orderly.yml")))
 
 In this example, the script is trivial:
 
-
 ```{r, echo = FALSE, results = "asis"}
 r_output(readLines(file.path(path_example, "script.R")))
 ```

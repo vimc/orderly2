@@ -7,12 +7,14 @@
 orderly_plugin(check, read, run, schema = NULL)
 }
 \arguments{
-\item{read}{A function to read, check and process the configuration
-section in \code{orderly.yml}, i.e., for a single report. It will be
-passed the data for the plugin section of \code{orderly.yml}, the
-full path to \code{orderly.yml} and also the orderly root object.
-This last object is not yet exported normally and so is subject
-to change! It should return the processed}
+\item{read}{A function to read, check and process the
+configuration section in \code{orderly.yml}, i.e., for a single
+report. It will be passed the data for the plugin section of
+\code{orderly.yml}, the full path to \code{orderly.yml} and also the
+orderly root object.  This last object is not yet exported
+normally and so is subject to change! It should return the
+processed per-report configuration data, which can then be used
+by the \code{run} function.}
 
 \item{run}{A function to mutate the report state at runtime. This
 is evaluated at a specific point in the process that needs
@@ -26,7 +28,7 @@ path to the working directory for the report, which your
 function can use to write new files into.}
 
 \item{schema}{Optionally a path to a schema for the metadata
-created by this plugin.}
+created by this plugin. See \code{vignette("plugins")} for details.}
 
 \item{config}{A function to read, check and process the
 configuration section in \code{orderly_config.yml}. This function
@@ -47,5 +49,7 @@ Create an orderly plugin. A plugin is typically defined by a
 package and is used to extend orderly by enabling new
 functionality, declared in \code{orderly_config.yml} and \code{orderly.yml}
 and affecting the running of reports primarily by creating new
-objects in the report environment.
+objects in the report environment.  This system is discussed in
+more detail in \code{vignette("plugins")}, but will be expanded (likely
+in breaking ways) soon.
 }
