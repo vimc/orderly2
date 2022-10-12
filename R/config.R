@@ -19,7 +19,7 @@ orderly_config_yml_read <- function(path) {
   plugins <- orderly_config_validate_plugins(raw$plugins, filename)
   check <- c(list(
     global_resources = orderly_config_validate_global_resources),
-    lapply(plugins, "[[", "check"))
+    lapply(plugins, "[[", "config"))
 
   ## Same validation strategy as orderly_yml_read
   required <- character()
