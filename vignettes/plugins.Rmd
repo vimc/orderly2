@@ -108,6 +108,8 @@ writeLines(c(
   '    }',
   '}'),
   path_schema)
+# Try to get things behaving on windows
+path_schema <- normalizePath(path_schema, winslash = "/", mustwork = TRUE)
 ```
 
 Here is the directory structure of our minimal project
