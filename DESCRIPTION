@@ -1,6 +1,6 @@
 Package: orderly2
 Title: Reimplement Orderly
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(person("Rich", "FitzJohn", role = c("aut", "cre"),
                     email = "email@example.com"),
              person("Imperial College of Science, Technology and Medicine",
