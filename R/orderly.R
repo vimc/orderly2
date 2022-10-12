@@ -66,11 +66,6 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
-  ## This feels a little weird - the other way to do this would be to
-  ## reorganise the data on read to put all plugins into a single
-  ## plugins key? We could apply that same approach to the
-  ## configuration too? If we do this we split it into plugins/config
-  ## and plugins/data perhaps?
   plugins <- intersect(names(root$config$plugins), names(dat))
 
   dat$depends <- resolve_dependencies(dat$depends, parameters, root)
@@ -106,15 +101,6 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
     }
     outpack::outpack_packet_file_mark(inputs, "immutable")
 
-    ## Mutations at run time will affect the environment (either by
-    ## reading or writing), and may affect (again via reading or
-    ## writing) the disk.
-
-    ## TODO: again, here we have some ambiguity about whether the data
-    ## should be stored under plugins or at the top level
-    ##
-    ## TODO: where is the schema validation happening here? I think
-    ## that we need to do this afterwards?
     for (p in plugins) {
       custom_metadata$plugins[[p]] <-
         root$config$plugins[[p]]$run(dat[[p]], root, parameters, envir, path)

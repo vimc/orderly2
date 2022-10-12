@@ -2,7 +2,9 @@
 ##' package and is used to extend orderly by enabling new
 ##' functionality, declared in `orderly_config.yml` and `orderly.yml`
 ##' and affecting the running of reports primarily by creating new
-##' objects in the report environment.
+##' objects in the report environment.  This system is discussed in
+##' more detail in `vignette("plugins")`, but will be expanded (likely
+##' in breaking ways) soon.
 ##'
 ##' @title Create an orderly plugin
 ##'
@@ -15,12 +17,14 @@
 ##'   load. It should return a processed copy of the configuration
 ##'   data, to be passed in as the second argument to `read`.
 ##'
-##' @param read A function to read, check and process the configuration
-##'   section in `orderly.yml`, i.e., for a single report. It will be
-##'   passed the data for the plugin section of `orderly.yml`, the
-##'   full path to `orderly.yml` and also the orderly root object.
-##'   This last object is not yet exported normally and so is subject
-##'   to change! It should return the processed
+##' @param read A function to read, check and process the
+##'   configuration section in `orderly.yml`, i.e., for a single
+##'   report. It will be passed the data for the plugin section of
+##'   `orderly.yml`, the full path to `orderly.yml` and also the
+##'   orderly root object.  This last object is not yet exported
+##'   normally and so is subject to change! It should return the
+##'   processed per-report configuration data, which can then be used
+##'   by the `run` function.
 ##'
 ##' @param run A function to mutate the report state at runtime. This
 ##'   is evaluated at a specific point in the process that needs
@@ -34,7 +38,7 @@
 ##'   function can use to write new files into.
 ##'
 ##' @param schema Optionally a path to a schema for the metadata
-##'   created by this plugin.
+##'   created by this plugin. See `vignette("plugins")` for details.
 ##'
 ##' @return An `orderly_plugin` object, though normally this would not
 ##'   be interacted with by users. Typically, this will be passed
@@ -43,6 +47,8 @@
 ##' @export
 orderly_plugin <- function(check, read, run, schema = NULL) {
   assert_is(check, "function")
+  assert_is(read, "function")
+  assert_is(run, "function")
   if (!is.null(schema)) {
     assert_file_exists(schema, name = "Schema file")
     schema <- paste(readLines(schema), collapse = "\n")
