@@ -1,6 +1,6 @@
 example_plugin <- function() {
   list(
-    check = function(data, filename) {
+    config = function(data, filename) {
       assert_named(data, name = paste0(filename, ":example.random"))
       assert_scalar_character(data$distribution,
                               paste0(filename, ":example.random:distribution"))
@@ -40,7 +40,7 @@ example_plugin <- function() {
 register_example_plugin <- function(clean = TRUE) {
   dat <- example_plugin()
   orderly_plugin_register(
-    orderly_plugin(dat$check, dat$read, dat$run, dat$schema),
+    orderly_plugin(dat$config, dat$read, dat$run, dat$schema),
     "example.random")
   if (clean) {
     withr::defer_parent(rm(list = "example.random", envir = .plugins))

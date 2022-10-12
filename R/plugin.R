@@ -45,8 +45,8 @@
 ##'   directly to [orderly2::orderly_plugin_register]
 ##'
 ##' @export
-orderly_plugin <- function(check, read, run, schema = NULL) {
-  assert_is(check, "function")
+orderly_plugin <- function(config, read, run, schema = NULL) {
+  assert_is(config, "function")
   assert_is(read, "function")
   assert_is(run, "function")
   if (!is.null(schema)) {
@@ -54,7 +54,7 @@ orderly_plugin <- function(check, read, run, schema = NULL) {
     schema <- paste(readLines(schema), collapse = "\n")
     class(schema) <- "json"
   }
-  ret <- list(check = check,
+  ret <- list(config = config,
               read = read,
               run = run,
               schema = schema)

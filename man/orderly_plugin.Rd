@@ -4,9 +4,18 @@
 \alias{orderly_plugin}
 \title{Create an orderly plugin}
 \usage{
-orderly_plugin(check, read, run, schema = NULL)
+orderly_plugin(config, read, run, schema = NULL)
 }
 \arguments{
+\item{config}{A function to read, check and process the
+configuration section in \code{orderly_config.yml}. This function
+will be passed the deserialised data from the plugin's section
+of \code{orderly_config.yml}, and the full path to that file.  As the
+order of loading of plugins is not defined, each plugin must
+standalone and should not try and interact with other plugins at
+load. It should return a processed copy of the configuration
+data, to be passed in as the second argument to \code{read}.}
+
 \item{read}{A function to read, check and process the
 configuration section in \code{orderly.yml}, i.e., for a single
 report. It will be passed the data for the plugin section of
@@ -29,15 +38,6 @@ function can use to write new files into.}
 
 \item{schema}{Optionally a path to a schema for the metadata
 created by this plugin. See \code{vignette("plugins")} for details.}
-
-\item{config}{A function to read, check and process the
-configuration section in \code{orderly_config.yml}. This function
-will be passed the deserialised data from the plugin's section
-of \code{orderly_config.yml}, and the full path to that file.  As the
-order of loading of plugins is not defined, each plugin must
-standalone and should not try and interact with other plugins at
-load. It should return a processed copy of the configuration
-data, to be passed in as the second argument to \code{read}.}
 }
 \value{
 An \code{orderly_plugin} object, though normally this would not
