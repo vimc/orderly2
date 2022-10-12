@@ -38,3 +38,47 @@ test_that("can validate schema", {
     orderly_run("plugin", root = path, envir = env),
     "Validating custom metadata failed")
 })
+
+
+test_that("loading plugin triggers package load", {
+  skip_if_not_installed("mockery")
+  clear_plugins()
+  on.exit(clear_plugins())
+
+  mock_load_namespace <- mockery::mock(register_example_plugin(clean = FALSE))
+  mockery::stub(load_orderly_plugin, "loadNamespace", mock_load_namespace)
+
+  plugin <- load_orderly_plugin("example.random")
+  mockery::expect_called(mock_load_namespace, 1)
+  expect_equal(mockery::mock_args(mock_load_namespace)[[1]],
+               list("example.random"))
+  expect_s3_class(plugin, "orderly_plugin")
+  expect_identical(plugin, .plugins$example.random)
+})
+
+
+test_that("error if load fails to register plugin", {
+  skip_if_not_installed("mockery")
+  clear_plugins()
+  on.exit(clear_plugins())
+
+  mock_load_namespace <- mockery::mock()
+  mockery::stub(load_orderly_plugin, "loadNamespace", mock_load_namespace)
+
+  expect_error(load_orderly_plugin("example.random"),
+               "Plugin 'example.random' not found")
+  mockery::expect_called(mock_load_namespace, 1)
+  expect_equal(mockery::mock_args(mock_load_namespace)[[1]],
+               list("example.random"))
+})
+
+
+test_that("don't load package if plugin already loaded", {
+  register_example_plugin()
+  mock_load_namespace <- mockery::mock()
+  mockery::stub(load_orderly_plugin, "loadNamespace", mock_load_namespace)
+  plugin <- load_orderly_plugin("example.random")
+  mockery::expect_called(mock_load_namespace, 0)
+  expect_s3_class(plugin, "orderly_plugin")
+  expect_identical(plugin, .plugins$example.random)
+})

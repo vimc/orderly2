@@ -37,12 +37,14 @@ example_plugin <- function() {
 }
 
 
-register_example_plugin <- function() {
+register_example_plugin <- function(clean = TRUE) {
   dat <- example_plugin()
   orderly_plugin_register(
     orderly_plugin(dat$check, dat$read, dat$run, dat$schema),
     "example.random")
-  withr::defer_parent(rm(list = "example.random", envir = .plugins))
+  if (clean) {
+    withr::defer_parent(rm(list = "example.random", envir = .plugins))
+  }
 }
 
 
