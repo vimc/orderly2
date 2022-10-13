@@ -347,7 +347,7 @@ file.create(file.path(path_pkg, "NAMESPACE"))
 fs::dir_create(file.path(path_pkg, "R"))
 writeLines(
   paste(vapply(code, paste, "", collapse = "\n"), collapse = "\n\n"),
-  file.path(path_pkg, "plugin.R"))
+  file.path(path_pkg, "R/plugin.R"))
 ```
 
 A complete, minimal, package for this plugin would look like:
@@ -367,7 +367,7 @@ The `NAMESPACE` file is empty, but must exist.
 The `plugin.R` file contains the code from above:
 
 ```{r, echo = FALSE, results = "asis"}
-r_output(readLines(file.path(path_pkg, "plugin.R")))
+r_output(readLines(file.path(path_pkg, "R/plugin.R")))
 ```
 
 (this code could be in any .R file in the package, or across several).
