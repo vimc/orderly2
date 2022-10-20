@@ -171,10 +171,10 @@ The arguments here are
 
 The return value should be the `data` argument with any auxiliary data added after validation.
 
-(3) Finally a "prepare" function that actually does the query and sets the data just before the report runs.
+(3) Finally a "run" function that actually does the query and sets the data just before the report runs.
 
 ```{r}
-db_prepare <- function(data, root, parameters, environment, path) {
+db_run <- function(data, root, parameters, environment, path) {
   dbname <- root$config$example.db$path
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname)
   on.exit(DBI::dbDisconnect(con))
@@ -201,7 +201,7 @@ With these three functions we can manually register the plugin (see below for ho
 
 ```{r}
 orderly2::orderly_plugin_register(
-  orderly2::orderly_plugin(db_config, db_read, db_prepare),
+  orderly2::orderly_plugin(db_config, db_read, db_run),
   "example.db")
 ```
 
@@ -269,7 +269,7 @@ Nothing about what the plugin does is saved into the report metadata unless you 
 * perhaps some summary of the content such as a hash so that we can see if the content has changed between different versions of a report
 
 ```{r, export_to_package = TRUE}
-db_prepare <- function(data, config, environment, parameters, path) {
+db_run <- function(data, config, environment, parameters, path) {
   dbname <- config[[1]]
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname)
   on.exit(DBI::dbDisconnect(con))
@@ -298,13 +298,13 @@ Now, when we register the plugin, we provide the path to this schema
 
 ```{r}
 orderly2::orderly_plugin_register(
-  orderly2::orderly_plugin(db_config, db_read, db_prepare, path_schema),
+  orderly2::orderly_plugin(db_config, db_read, db_run, path_schema),
   "example.db")
 ```
 
-Now, when the orderly metadata is saved (just before running the script part of a report) we will validate output that `db_prepare` generates against the schema, if `jsonvalidate` is installed (currently this requires our development version) and if the R option `outpack.schema_validate` is set to `TRUE` (e.g., by running `options(outpack.schema_validate = TRUE)`).
+Now, when the orderly metadata is saved (just before running the script part of a report) we will validate output that `db_run` generates against the schema, if `jsonvalidate` is installed (currently this requires our development version) and if the R option `outpack.schema_validate` is set to `TRUE` (e.g., by running `options(outpack.schema_validate = TRUE)`).
 
-If you need to control serialisation of the output from the "prepare" function, you should use `jsonlite::toJSON` within that function directly and orderly2 will interpolate it verbatim into the final JSON (the important part of this is that it ends up as a string with class `json`).
+If you need to control serialisation of the output from the "run" function, you should use `jsonlite::toJSON` within that function directly and orderly2 will interpolate it verbatim into the final JSON (the important part of this is that it ends up as a string with class `json`).
 
 # Arranging the plugin in a package
 
@@ -315,7 +315,7 @@ All you need to do is make sure that the `.onLoad` function calls `orderly2:::or
 ```{r, export_to_package = TRUE}
 .onLoad <- function(...) {
   orderly2::orderly_plugin_register(
-    orderly2::orderly_plugin(db_config, db_read, db_prepare, path_schema),
+    orderly2::orderly_plugin(db_config, db_read, db_run, path_schema),
     "example.db")
 }
 ```
