@@ -1,0 +1,7 @@
+script: script.R
+artefacts:
+  data:
+    description: Generated data
+    filenames: data.rds
+example.random:
+  dat: 10

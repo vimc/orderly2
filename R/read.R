@@ -28,7 +28,7 @@ orderly_yml_read <- function(name, path, root, develop = FALSE) {
 
   ## TODO: Some of these do on-disk validation (usually that files
   ## exist) - we might be better deferring this until later.
-  check <- list(
+  check <- c(list(
     script = orderly_yml_validate_script,
     packages = orderly_yml_validate_packages,
     sources = orderly_yml_validate_sources,
@@ -38,7 +38,8 @@ orderly_yml_read <- function(name, path, root, develop = FALSE) {
     resources = orderly_yml_validate_resources,
     depends = orderly_yml_validate_depends,
     artefacts = orderly_yml_validate_artefacts,
-    global_resources = orderly_yml_validate_global_resources)
+    global_resources = orderly_yml_validate_global_resources),
+    lapply(root$config$plugins, "[[", "read"))
 
   dat <- list(name = name,
               path = path)

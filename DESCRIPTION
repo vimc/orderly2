@@ -1,6 +1,6 @@
 Package: orderly2
 Title: Reimplement Orderly
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(person("Rich", "FitzJohn", role = c("aut", "cre"),
                     email = "email@example.com"),
              person("Imperial College of Science, Technology and Medicine",
@@ -9,7 +9,7 @@ Description: A reimplementation of the good bits of orderly using outpack.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.2.1
 URL: https://github.com/vimc/orderly2
 BugReports: https://github.com/vimc/orderly2/issues
 Imports:
@@ -19,11 +19,17 @@ Imports:
     outpack (>= 0.1.5),
     yaml
 Suggests:
+    DBI,
+    RSQLite,
     jsonvalidate (>= 1.4.0),
+    knitr,
     mockery,
+    rmarkdown,
     testthat (>= 3.0.0),
     withr
 Config/testthat/edition: 3
 Remotes:
     mrc-ide/outpack,
     ropensci/jsonvalidate
+VignetteBuilder: knitr
+Language: en-GB

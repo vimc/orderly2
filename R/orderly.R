@@ -66,8 +66,10 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
 
+  plugins <- intersect(names(root$config$plugins), names(dat))
+
   dat$depends <- resolve_dependencies(dat$depends, parameters, root)
-  custom_metadata <- to_json(orderly_custom_metadata(dat))
+  custom_metadata <- orderly_custom_metadata(dat)
 
   expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
 
@@ -89,6 +91,8 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   envir <- envir %||% .GlobalEnv
   assert_is(envir, "environment")
 
+  schema <- custom_metadata_schema(root$config)
+
   withCallingHandlers({
     outpack::outpack_packet_start(path, name, parameters = parameters,
                                   id = id, root = root$outpack)
@@ -96,8 +100,14 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
       list2env(parameters, envir)
     }
     outpack::outpack_packet_file_mark(inputs, "immutable")
-    outpack::outpack_packet_add_custom("orderly", custom_metadata,
-                                       custom_metadata_schema())
+
+    for (p in plugins) {
+      custom_metadata$plugins[[p]] <-
+        root$config$plugins[[p]]$run(dat[[p]], root, parameters, envir, path)
+    }
+
+    outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
+                                       schema)
 
     for (p in dat$packages) {
       library(p, character.only = TRUE)
@@ -112,6 +122,8 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
                                              dat$depends$files[[i]])
     }
 
+    ## TODO: if run fails we might not close out the device stack
+    ## here, we do need to do that to make things easy for the user.
     outpack::outpack_packet_run(dat$script, envir)
     check_produced_files(path, expected, outpack::outpack_packet_file_list())
     outpack::outpack_packet_end()
@@ -169,7 +181,9 @@ orderly_custom_metadata <- function(orderly_yml_dat) {
     role = custom_role,
     displayname = scalar(orderly_yml_dat$displayname),
     description = scalar(orderly_yml_dat$description),
-    custom = NULL)
+    custom = NULL,
+    ## Will get filled in later
+    plugins = list())
 }
 
 
