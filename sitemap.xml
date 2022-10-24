@@ -7,6 +7,12 @@
     <loc>/LICENSE-text.html</loc>
   </url>
   <url>
+    <loc>/articles/index.html</loc>
+  </url>
+  <url>
+    <loc>/articles/plugins.html</loc>
+  </url>
+  <url>
     <loc>/authors.html</loc>
   </url>
   <url>
@@ -14,6 +20,12 @@
   </url>
   <url>
     <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/orderly_plugin.html</loc>
+  </url>
+  <url>
+    <loc>/reference/orderly_plugin_register.html</loc>
   </url>
   <url>
     <loc>/reference/orderly_run.html</loc>
