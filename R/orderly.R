@@ -58,10 +58,16 @@
 ##' @export
 orderly_run <- function(name, parameters = NULL, envir = NULL,
                         root = NULL, locate = TRUE) {
+  orderly_run_internal(name, parameters, envir, root, locate, develop = FALSE)
+}
+
+
+orderly_run_internal <- function(name, parameters, envir,
+                                 root, locate, develop) {
   root <- orderly_root(root, locate)
 
   src <- file.path(root$path, "src", name)
-  dat <- orderly_yml_read(name, src, root)
+  dat <- orderly_yml_read(name, src, root, develop)
 
   parameters <- check_parameters(parameters, dat$parameters)
   inputs <- c("orderly.yml", dat$script, dat$resources, dat$sources)
@@ -74,8 +80,13 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
   expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
 
   id <- outpack::outpack_id()
-  path <- file.path(root$path, "draft", name, id)
-  fs::dir_create(path)
+
+  if (develop) {
+    path <- file.path(root$path, "src", name)
+  } else {
+    path <- file.path(root$path, "draft", name, id)
+    fs::dir_create(path)
+  }
 
   fs::dir_create(file.path(path, dirname(inputs)))
   ## TODO: I don't think this copes with things within directories?
@@ -122,12 +133,16 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
                                              dat$depends$files[[i]])
     }
 
-    ## TODO: if run fails we might not close out the device stack
-    ## here, we do need to do that to make things easy for the user.
-    outpack::outpack_packet_run(dat$script, envir)
-    check_produced_files(path, expected, outpack::outpack_packet_file_list())
-    outpack::outpack_packet_end()
-    unlink(path, recursive = TRUE)
+    if (develop) {
+      outpack::outpack_packet_cancel()
+    } else {
+      ## TODO: if run fails we might not close out the device stack
+      ## here, we do need to do that to make things easy for the user.
+      outpack::outpack_packet_run(dat$script, envir)
+      check_produced_files(path, expected, outpack::outpack_packet_file_list())
+      outpack::outpack_packet_end()
+      unlink(path, recursive = TRUE)
+    }
   }, error = function(e) {
     ## Eventually fail nicely here with mrc-3379
     outpack::outpack_packet_cancel()
