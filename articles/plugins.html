@@ -72,7 +72,7 @@
 
       
 
-      </header><script src="plugins_files/accessible-code-block-0.0.1/empty-anchor.js"></script><div class="row">
+      </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>plugins</h1>
@@ -85,25 +85,45 @@
 
     
     
-<p>In order to make orderly/orderly2 more extensible without bloating the core, we have designed a simple plugin interface. Our first use case for this is shifting all of orderly 1.0’s database functionality out of the main package, but other uses are possible!</p>
-<p>This vignette is intended to primarily serve as a design document, and will be of interest to the small number of people who might want to write a new plugin, or to edit an existing one.</p>
+<p>In order to make orderly/orderly2 more extensible without bloating
+the core, we have designed a simple plugin interface. Our first use case
+for this is shifting all of orderly 1.0’s database functionality out of
+the main package, but other uses are possible!</p>
+<p>This vignette is intended to primarily serve as a design document,
+and will be of interest to the small number of people who might want to
+write a new plugin, or to edit an existing one.</p>
 <div class="section level3">
 <h3 id="the-basic-idea">The basic idea<a class="anchor" aria-label="anchor" href="#the-basic-idea"></a>
 </h3>
-<p>A plugin is provided by a package, possibly it will be the only thing that a package provides. The plugin name will be the same as the package name. The only functions that the package needs to call is <code><a href="../reference/orderly_plugin.html">orderly2::orderly_plugin</a></code> and <code><a href="../reference/orderly_plugin_register.html">orderly2::orderly_plugin_register</a></code> which create and register the plugin, respectively.</p>
-<p>To make a plugin available for an orderly project, two new bits of configuration may be present in <code>orderly_config.yml</code> - one declares the plugin will be used, the other configures the plugin.</p>
-<p>To use a plugin for an individual report, a configuration with a plugin name must be present, and includes any instructions to that plugin.</p>
-<p>Finally, we can save information back into the final orderly2 metadata about what the plugin did.</p>
+<p>A plugin is provided by a package, possibly it will be the only thing
+that a package provides. The plugin name will be the same as the package
+name. The only functions that the package needs to call is
+<code><a href="../reference/orderly_plugin.html">orderly2::orderly_plugin</a></code> and
+<code><a href="../reference/orderly_plugin_register.html">orderly2::orderly_plugin_register</a></code> which create and register
+the plugin, respectively.</p>
+<p>To make a plugin available for an orderly project, two new bits of
+configuration may be present in <code>orderly_config.yml</code> - one
+declares the plugin will be used, the other configures the plugin.</p>
+<p>To use a plugin for an individual report, a configuration with a
+plugin name must be present, and includes any instructions to that
+plugin.</p>
+<p>Finally, we can save information back into the final orderly2
+metadata about what the plugin did.</p>
 </div>
 <div class="section level3">
 <h3 id="an-example">An example<a class="anchor" aria-label="anchor" href="#an-example"></a>
 </h3>
-<p>As an example, we’ll implement a stripped down version of the database plugin that inspired this work. To make this work:</p>
+<p>As an example, we’ll implement a stripped down version of the
+database plugin that inspired this work. To make this work:</p>
 <ul>
-<li>we need to add to <code>orderly_config.yml</code> some information about where to find the database</li>
-<li>we need to add to <code>orderly.yml</code> some information about queries that we want to make, resulting in data available to the report</li>
+<li>we need to add to <code>orderly_config.yml</code> some information
+about where to find the database</li>
+<li>we need to add to <code>orderly.yml</code> some information about
+queries that we want to make, resulting in data available to the
+report</li>
 </ul>
-<p>We’ll start with the report side of things, describing what we want to happen, then work on the implementation.</p>
+<p>We’ll start with the report side of things, describing what we want
+to happen, then work on the implementation.</p>
 <p>Here is the directory structure of our minimal project</p>
 <pre><code><span><span class="co">## <span style="color: #0000BB; font-weight: bold;">.</span></span></span>
 <span><span class="co">## ├── orderly_config.yml</span></span>
@@ -111,31 +131,40 @@
 <span><span class="co">##     └── <span style="color: #0000BB; font-weight: bold;">example</span></span></span>
 <span><span class="co">##         ├── orderly.yml</span></span>
 <span><span class="co">##         └── <span style="color: #00BB00;">script.R</span></span></span></code></pre>
-<p>The <code>orderly_config.yml</code> file contains the information shared by all possible uses of the plugin - in the case the connection information for the database:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1"></a><span class="fu">plugins</span><span class="kw">:</span></span>
-<span id="cb2-2"><a href="#cb2-2"></a><span class="at">  </span><span class="fu">example.db</span><span class="kw">:</span><span class="at"> </span><span class="ch">~</span></span>
-<span id="cb2-3"><a href="#cb2-3"></a></span>
-<span id="cb2-4"><a href="#cb2-4"></a><span class="fu">example.db</span><span class="kw">:</span></span>
-<span id="cb2-5"><a href="#cb2-5"></a><span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /tmp/RtmpMIohFI/file455b1adcbb86</span></span></code></pre></div>
-<p>The <code>orderly.yml</code> file contains information about use of the database for this specific report; in this case, making the results of the query <code>SELECT * from mtcars WHERE cyl == 4</code> against the database available as some R object <code>dat</code></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1"></a><span class="fu">script</span><span class="kw">:</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a><span class="at">  script.R</span></span>
-<span id="cb3-3"><a href="#cb3-3"></a></span>
-<span id="cb3-4"><a href="#cb3-4"></a><span class="fu">example.db</span><span class="kw">:</span></span>
-<span id="cb3-5"><a href="#cb3-5"></a><span class="at">  </span><span class="fu">dat</span><span class="kw">:</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a><span class="at">     SELECT * from mtcars WHERE cyl == 4</span></span>
-<span id="cb3-7"><a href="#cb3-7"></a></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="fu">artefacts</span><span class="kw">:</span></span>
-<span id="cb3-9"><a href="#cb3-9"></a><span class="at">  </span><span class="fu">data</span><span class="kw">:</span></span>
-<span id="cb3-10"><a href="#cb3-10"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> summary of data</span></span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="at">    </span><span class="fu">filenames</span><span class="kw">:</span><span class="at"> data.rds</span></span></code></pre></div>
+<p>The <code>orderly_config.yml</code> file contains the information
+shared by all possible uses of the plugin - in the case the connection
+information for the database:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plugins</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">example.db</span><span class="kw">:</span><span class="at"> </span><span class="ch">~</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">example.db</span><span class="kw">:</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /tmp/Rtmp26m2SS/file1d0b70b34068</span></span></code></pre></div>
+<p>The <code>orderly.yml</code> file contains information about use of
+the database for this specific report; in this case, making the results
+of the query <code>SELECT * from mtcars WHERE cyl == 4</code> against
+the database available as some R object <code>dat</code></p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">script</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  script.R</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">example.db</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dat</span><span class="kw">:</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">     SELECT * from mtcars WHERE cyl == 4</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="fu">artefacts</span><span class="kw">:</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">data</span><span class="kw">:</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> summary of data</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">filenames</span><span class="kw">:</span><span class="at"> data.rds</span></span></code></pre></div>
 <p>In this example, the script is trivial:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">saveRDS</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">dat</span><span class="op">)</span>, <span class="st">"data.rds"</span><span class="op">)</span></span></code></pre></div>
-<p>but normally you’d be doing some calculation here, using any of the other functionality of orderly.</p>
+<p>but normally you’d be doing some calculation here, using any of the
+other functionality of orderly.</p>
 <p>To implement this we need to write three functions:</p>
 <ol style="list-style-type: decimal">
-<li>A “config” function to process the data from <code>orderly_config.yml</code>, primarily this is concerned with validation so can be fairly simple at first, later we’ll expand this to report errors nicely.</li>
+<li>A “config” function to process the data from
+<code>orderly_config.yml</code>, primarily this is concerned with
+validation so can be fairly simple at first, later we’ll expand this to
+report errors nicely.</li>
 </ol>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_config</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">filename</span><span class="op">)</span> <span class="op">{</span></span>
@@ -144,14 +173,19 @@
 <p>The arguments here are</p>
 <ul>
 <li>
-<code>data</code>: the deserialised section of the <code>orderly_config.yml</code> specific to this plugin</li>
+<code>data</code>: the deserialised section of the
+<code>orderly_config.yml</code> specific to this plugin</li>
 <li>
-<code>filename</code>: the full path to <code>orderly_config.yml</code>
+<code>filename</code>: the full path to
+<code>orderly_config.yml</code>
 </li>
 </ul>
-<p>The return value here should be the <code>data</code> argument with any auxiliary data added after validation.</p>
+<p>The return value here should be the <code>data</code> argument with
+any auxiliary data added after validation.</p>
 <ol start="2" style="list-style-type: decimal">
-<li>A “read” function to process and validate the data from <code>orderly.yml</code> specific to this plugin, again we can make this very simple at first</li>
+<li>A “read” function to process and validate the data from
+<code>orderly.yml</code> specific to this plugin, again we can make this
+very simple at first</li>
 </ol>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_read</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">filename</span>, <span class="va">root</span><span class="op">)</span> <span class="op">{</span></span>
@@ -160,16 +194,22 @@
 <p>The arguments here are</p>
 <ul>
 <li>
-<code>data</code>: the deserialised section of <code>orderly.yml</code> specific to this plugin</li>
+<code>data</code>: the deserialised section of
+<code>orderly.yml</code> specific to this plugin</li>
 <li>
-<code>filename</code>: the full path to <code>orderly.yml</code>
+<code>filename</code>: the full path to
+<code>orderly.yml</code>
 </li>
 <li>
-<code>root</code>: the orderly root object. This is currently undocumented and subject to change, but can be used (theoretically) to access other parts of the orderly configuration</li>
+<code>root</code>: the orderly root object. This is currently
+undocumented and subject to change, but can be used (theoretically) to
+access other parts of the orderly configuration</li>
 </ul>
-<p>The return value should be the <code>data</code> argument with any auxiliary data added after validation.</p>
+<p>The return value should be the <code>data</code> argument with any
+auxiliary data added after validation.</p>
 <ol start="3" style="list-style-type: decimal">
-<li>Finally a “run” function that actually does the query and sets the data just before the report runs.</li>
+<li>Finally a “run” function that actually does the query and sets the
+data just before the report runs.</li>
 </ol>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_run</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">root</span>, <span class="va">parameters</span>, <span class="va">environment</span>, <span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
@@ -184,35 +224,59 @@
 <p>The arguments here are</p>
 <ul>
 <li>
-<code>data</code>: the configuration data as processed by the “read” function (here, <code>db_read</code>)</li>
+<code>data</code>: the configuration data as processed by the “read”
+function (here, <code>db_read</code>)</li>
 <li>
-<code>root</code>: the root object, as above. From this you can access the plugin-specific configuration as <code>root$config$plugin.name</code>, substituting <code>plugin.name</code> for your plugin name (here it is <code>example.db</code>)</li>
+<code>root</code>: the root object, as above. From this you can
+access the plugin-specific configuration as
+<code>root$config$plugin.name</code>, substituting
+<code>plugin.name</code> for your plugin name (here it is
+<code>example.db</code>)</li>
 <li>
-<code>parameters</code>: a named list of parameters, as passed to <code><a href="../reference/orderly_run.html">orderly2::orderly_run</a></code>
+<code>parameters</code>: a named list of parameters, as passed to
+<code><a href="../reference/orderly_run.html">orderly2::orderly_run</a></code>
 </li>
 <li>
-<code>envir</code>: the report environment. You can save data here and it will be available to your report</li>
+<code>envir</code>: the report environment. You can save data here
+and it will be available to your report</li>
 <li>
-<code>path</code>: the working directory for the report. You can save files here and they will be available to the report</li>
+<code>path</code>: the working directory for the report. You can
+save files here and they will be available to the report</li>
 </ul>
-<p>The primary ways that this function will affect the running of a report is in creating objects within the report environment (by setting elements in <code>environment</code>, as we do here) or by writing files into the report running directory, using the <code>path</code> argument.</p>
-<p>The return value of this function is <code>NULL</code>, indicating that no metadata will be saved into the orderly/outpack index. Later, we’ll show why and how to change this.</p>
-<p>With these three functions we can manually register the plugin (see below for how this will eventually be done in a package context)</p>
+<p>The primary ways that this function will affect the running of a
+report is in creating objects within the report environment (by setting
+elements in <code>environment</code>, as we do here) or by writing files
+into the report running directory, using the <code>path</code>
+argument.</p>
+<p>The return value of this function is <code>NULL</code>, indicating
+that no metadata will be saved into the orderly/outpack index. Later,
+we’ll show why and how to change this.</p>
+<p>With these three functions we can manually register the plugin (see
+below for how this will eventually be done in a package context)</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin_register.html">orderly_plugin_register</a></span><span class="op">(</span></span>
 <span>  <span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin.html">orderly_plugin</a></span><span class="op">(</span><span class="va">db_config</span>, <span class="va">db_read</span>, <span class="va">db_run</span><span class="op">)</span>,</span>
 <span>  <span class="st">"example.db"</span><span class="op">)</span></span></code></pre></div>
-<p>The name argument here must match the name used in the configuration.</p>
+<p>The name argument here must match the name used in the
+configuration.</p>
 <p>Now, we can run the report:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_run.html">orderly_run</a></span><span class="op">(</span><span class="st">"example"</span>, root <span class="op">=</span> <span class="va">path_root</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] "20221024-100045-d20e54ad"</span></span></code></pre>
+<pre><code><span><span class="co">## [1] "20230221-134506-39ba1bc7"</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="making-the-plugin-more-robust">Making the plugin more robust<a class="anchor" aria-label="anchor" href="#making-the-plugin-more-robust"></a>
 </h2>
-<p>The plugin above is fairly fragile because it does not do any validation on the input data from <code>orderly_config.yml</code> or <code>orderly.yml</code>. This is fairly annoying to do as yaml is incredibly flexible and reporting back information to the user about what might have gone wrong is hard.</p>
-<p>In our case, we expect a single key-value pair in <code>orderly_config.yml</code> with the key being <code>path</code> and the value being the path to a SQLite database. We can easily expand our configuration function to report better back to the user when they misconfigure the plugin:</p>
+<p>The plugin above is fairly fragile because it does not do any
+validation on the input data from <code>orderly_config.yml</code> or
+<code>orderly.yml</code>. This is fairly annoying to do as yaml is
+incredibly flexible and reporting back information to the user about
+what might have gone wrong is hard.</p>
+<p>In our case, we expect a single key-value pair in
+<code>orderly_config.yml</code> with the key being <code>path</code> and
+the value being the path to a SQLite database. We can easily expand our
+configuration function to report better back to the user when they
+misconfigure the plugin:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_config</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">filename</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">is.list</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">||</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span><span class="op">)</span> <span class="op">||</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
@@ -228,8 +292,12 @@
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">data</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>This should do an acceptable job of preventing poor input while suggesting to the user where they might look within the configuration to fix it. Note that we return the configuration data here, and you can augment (or otherwise change) this data as you need.</p>
-<p>Similarly, for the use in <code>orderly.yml</code>, we require a named list of query strings.</p>
+<p>This should do an acceptable job of preventing poor input while
+suggesting to the user where they might look within the configuration to
+fix it. Note that we return the configuration data here, and you can
+augment (or otherwise change) this data as you need.</p>
+<p>Similarly, for the use in <code>orderly.yml</code>, we require a
+named list of query strings.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_read</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">filename</span>, <span class="va">root</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="op">{</span></span>
@@ -252,11 +320,19 @@
 <div class="section level2">
 <h2 id="saving-metadata-about-what-the-plugin-did">Saving metadata about what the plugin did<a class="anchor" aria-label="anchor" href="#saving-metadata-about-what-the-plugin-did"></a>
 </h2>
-<p>Nothing about what the plugin does is saved into the report metadata unless you save it. Partly this is because the orderly.yml, which is saved into the final directory, serves as some sort of record. However, you probably want to know something about the data that you returned here. For example we might want to save</p>
+<p>Nothing about what the plugin does is saved into the report metadata
+unless you save it. Partly this is because the orderly.yml, which is
+saved into the final directory, serves as some sort of record. However,
+you probably want to know something about the data that you returned
+here. For example we might want to save</p>
 <ul>
-<li>the query string so that later we can query it without having to read and process the <code>orderly.yml</code> file</li>
-<li>some statistics about the size of the data (e.g., the number of rows returned, or the columns)</li>
-<li>perhaps some summary of the content such as a hash so that we can see if the content has changed between different versions of a report</li>
+<li>the query string so that later we can query it without having to
+read and process the <code>orderly.yml</code> file</li>
+<li>some statistics about the size of the data (e.g., the number of rows
+returned, or the columns)</li>
+<li>perhaps some summary of the content such as a hash so that we can
+see if the content has changed between different versions of a
+report</li>
 </ul>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">db_run</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">config</span>, <span class="va">environment</span>, <span class="va">parameters</span>, <span class="va">path</span><span class="op">)</span> <span class="op">{</span></span>
@@ -274,52 +350,76 @@
 <span>  <span class="op">}</span></span>
 <span>  <span class="va">ret</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>Here, we use <code><a href="https://rdrr.io/pkg/jsonlite/man/unbox.html" class="external-link">jsonlite::unbox</a></code> to tell the eventual serialisation that this is a scalar (so should be saved as a string or a number, not an array of length 1 containing a string or a number). You can also directly serialise to JSON in this function using <code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> with whatever arguments you prefer, and so long as the class of the returned object is <code>json</code> then it will be inserted correctly into the final metadata.</p>
-<p>Taking this a step further, we can also specify a <a href="https://json-schema.org/" class="external-link">schema</a> that this metadata will conform to</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb14-1"><a href="#cb14-1"></a><span class="fu">{</span></span>
-<span id="cb14-2"><a href="#cb14-2"></a>    <span class="dt">"$schema"</span><span class="fu">:</span> <span class="st">"http://json-schema.org/draft-07/schema#"</span><span class="fu">,</span></span>
-<span id="cb14-3"><a href="#cb14-3"></a></span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
-<span id="cb14-5"><a href="#cb14-5"></a>    <span class="dt">"additionalProperties"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-6"><a href="#cb14-6"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
-<span id="cb14-7"><a href="#cb14-7"></a>        <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-8"><a href="#cb14-8"></a>            <span class="dt">"query"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-9"><a href="#cb14-9"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span></span>
-<span id="cb14-10"><a href="#cb14-10"></a>            <span class="fu">},</span></span>
-<span id="cb14-11"><a href="#cb14-11"></a>            <span class="dt">"rows"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-12"><a href="#cb14-12"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"number"</span></span>
-<span id="cb14-13"><a href="#cb14-13"></a>            <span class="fu">},</span></span>
-<span id="cb14-14"><a href="#cb14-14"></a>            <span class="dt">"cols"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-15"><a href="#cb14-15"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"array"</span><span class="fu">,</span></span>
-<span id="cb14-16"><a href="#cb14-16"></a>                <span class="dt">"items"</span><span class="fu">:</span> <span class="fu">{</span></span>
-<span id="cb14-17"><a href="#cb14-17"></a>                    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"character"</span></span>
-<span id="cb14-18"><a href="#cb14-18"></a>                <span class="fu">}</span></span>
-<span id="cb14-19"><a href="#cb14-19"></a>            <span class="fu">}</span></span>
-<span id="cb14-20"><a href="#cb14-20"></a>        <span class="fu">},</span></span>
-<span id="cb14-21"><a href="#cb14-21"></a>        <span class="dt">"required"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"query"</span><span class="ot">,</span> <span class="st">"rows"</span><span class="ot">,</span> <span class="st">"cols"</span><span class="ot">]</span><span class="fu">,</span></span>
-<span id="cb14-22"><a href="#cb14-22"></a>        <span class="dt">"additionalProperties"</span><span class="fu">:</span> <span class="kw">false</span></span>
-<span id="cb14-23"><a href="#cb14-23"></a>    <span class="fu">}</span></span>
-<span id="cb14-24"><a href="#cb14-24"></a><span class="fu">}</span></span></code></pre></div>
-<p>Now, when we register the plugin, we provide the path to this schema</p>
+<p>Here, we use <code><a href="https://rdrr.io/pkg/jsonlite/man/unbox.html" class="external-link">jsonlite::unbox</a></code> to tell the eventual
+serialisation that this is a scalar (so should be saved as a string or a
+number, not an array of length 1 containing a string or a number). You
+can also directly serialise to JSON in this function using
+<code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> with whatever arguments you prefer, and so
+long as the class of the returned object is <code>json</code> then it
+will be inserted correctly into the final metadata.</p>
+<p>Taking this a step further, we can also specify a <a href="https://json-schema.org/" class="external-link">schema</a> that this metadata will
+conform to</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"$schema"</span><span class="fu">:</span> <span class="st">"http://json-schema.org/draft-07/schema#"</span><span class="fu">,</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="dt">"additionalProperties"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"object"</span><span class="fu">,</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"properties"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            <span class="dt">"query"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"string"</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            <span class="dt">"rows"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"number"</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>            <span class="fu">},</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>            <span class="dt">"cols"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>                <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"array"</span><span class="fu">,</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>                <span class="dt">"items"</span><span class="fu">:</span> <span class="fu">{</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>                    <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"character"</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>                <span class="fu">}</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>            <span class="fu">}</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>        <span class="fu">},</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"required"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"query"</span><span class="ot">,</span> <span class="st">"rows"</span><span class="ot">,</span> <span class="st">"cols"</span><span class="ot">]</span><span class="fu">,</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"additionalProperties"</span><span class="fu">:</span> <span class="kw">false</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="fu">}</span></span></code></pre></div>
+<p>Now, when we register the plugin, we provide the path to this
+schema</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin_register.html">orderly_plugin_register</a></span><span class="op">(</span></span>
 <span>  <span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin.html">orderly_plugin</a></span><span class="op">(</span><span class="va">db_config</span>, <span class="va">db_read</span>, <span class="va">db_run</span>, <span class="va">path_schema</span><span class="op">)</span>,</span>
 <span>  <span class="st">"example.db"</span><span class="op">)</span></span></code></pre></div>
-<p>Now, when the orderly metadata is saved (just before running the script part of a report) we will validate output that <code>db_run</code> generates against the schema, if <code>jsonvalidate</code> is installed (currently this requires our development version) and if the R option <code>outpack.schema_validate</code> is set to <code>TRUE</code> (e.g., by running <code>options(outpack.schema_validate = TRUE)</code>).</p>
-<p>If you need to control serialisation of the output from the “run” function, you should use <code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> within that function directly and orderly2 will interpolate it verbatim into the final JSON (the important part of this is that it ends up as a string with class <code>json</code>).</p>
+<p>Now, when the orderly metadata is saved (just before running the
+script part of a report) we will validate output that
+<code>db_run</code> generates against the schema, if
+<code>jsonvalidate</code> is installed (currently this requires our
+development version) and if the R option
+<code>outpack.schema_validate</code> is set to <code>TRUE</code> (e.g.,
+by running <code>options(outpack.schema_validate = TRUE)</code>).</p>
+<p>If you need to control serialisation of the output from the “run”
+function, you should use <code><a href="https://rdrr.io/pkg/jsonlite/man/fromJSON.html" class="external-link">jsonlite::toJSON</a></code> within that
+function directly and orderly2 will interpolate it verbatim into the
+final JSON (the important part of this is that it ends up as a string
+with class <code>json</code>).</p>
 </div>
 <div class="section level2">
 <h2 id="arranging-the-plugin-in-a-package">Arranging the plugin in a package<a class="anchor" aria-label="anchor" href="#arranging-the-plugin-in-a-package"></a>
 </h2>
-<p>Typically, a plugin should be in a package. Currently we only allow for a single plugin per package but later may relax this.</p>
-<p>All you need to do is make sure that the <code>.onLoad</code> function calls <code>orderly2:::orderly_register_plugin</code> - your package does not need to export any functions at all.</p>
+<p>Typically, a plugin should be in a package. Currently we only allow
+for a single plugin per package but later may relax this.</p>
+<p>All you need to do is make sure that the <code>.onLoad</code>
+function calls <code>orderly2:::orderly_register_plugin</code> - your
+package does not need to export any functions at all.</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">.onLoad</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin_register.html">orderly_plugin_register</a></span><span class="op">(</span></span>
 <span>    <span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin.html">orderly_plugin</a></span><span class="op">(</span><span class="va">db_config</span>, <span class="va">db_read</span>, <span class="va">db_run</span>, <span class="va">path_schema</span><span class="op">)</span>,</span>
 <span>    <span class="st">"example.db"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>The <code>name</code> argument to <code>orderly2:::orderly_register_plugin</code> must be the package name, as orderly2 will trigger loading the package based on this name in the configuration.</p>
+<p>The <code>name</code> argument to
+<code>orderly2:::orderly_register_plugin</code> must be the package
+name, as orderly2 will trigger loading the package based on this name in
+the configuration.</p>
 <p>A complete, minimal, package for this plugin would look like:</p>
 <pre><code><span><span class="co">## <span style="color: #0000BB; font-weight: bold;">example.db</span></span></span>
 <span><span class="co">## ├── DESCRIPTION</span></span>
@@ -391,18 +491,32 @@ Imports: orderly2</code></pre>
 <span>    <span class="fu">orderly2</span><span class="fu">::</span><span class="fu"><a href="../reference/orderly_plugin.html">orderly_plugin</a></span><span class="op">(</span><span class="va">db_config</span>, <span class="va">db_read</span>, <span class="va">db_run</span>, <span class="va">path_schema</span><span class="op">)</span>,</span>
 <span>    <span class="st">"example.db"</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
-<p>(this code could be in any .R file in the package, or across several).</p>
+<p>(this code could be in any .R file in the package, or across
+several).</p>
 </div>
 <div class="section level2">
 <h2 id="potential-uses">Potential uses<a class="anchor" aria-label="anchor" href="#potential-uses"></a>
 </h2>
-<p>Our need for this functionality are similar to this example - pulling out the database functionality from the original version of orderly into something that is more independent, as it turns out to be useful only in a fraction of orderly use-cases. We can imagine other potential uses though, such as:</p>
+<p>Our need for this functionality are similar to this example - pulling
+out the database functionality from the original version of orderly into
+something that is more independent, as it turns out to be useful only in
+a fraction of orderly use-cases. We can imagine other potential uses
+though, such as:</p>
 <ul>
-<li>Non-DBI-based database data extraction, or customised routines for pulling data from a database</li>
-<li>Download files from some shared location just before use (e.g., SharePoint, OneDrive, AWS). The <code>orderly_config.yml</code> would contain account connection details and <code>orderly.yml</code> would contain mapping between the remote data/files and local files. Rather than writing to the environment as we do above, use the <code>path</code> argument to copy files into the correct place.</li>
+<li>Non-DBI-based database data extraction, or customised routines for
+pulling data from a database</li>
+<li>Download files from some shared location just before use (e.g.,
+SharePoint, OneDrive, AWS). The <code>orderly_config.yml</code> would
+contain account connection details and <code>orderly.yml</code> would
+contain mapping between the remote data/files and local files. Rather
+than writing to the environment as we do above, use the
+<code>path</code> argument to copy files into the correct place.</li>
 <li>Pull data from some web API just before running</li>
 </ul>
-<p>These all follow the same basic pattern of requiring some configuration in order to be able to connect to the resource service, some specification of what resources are to be fetched, and some action to actually fetch the resource and put it into place.</p>
+<p>These all follow the same basic pattern of requiring some
+configuration in order to be able to connect to the resource service,
+some specification of what resources are to be fetched, and some action
+to actually fetch the resource and put it into place.</p>
 </div>
   </div>
 
@@ -423,7 +537,7 @@ Imports: orderly2</code></pre>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer>
