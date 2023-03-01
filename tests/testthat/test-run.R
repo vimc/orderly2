@@ -61,7 +61,7 @@ test_that("Check that required files are produced", {
   ## TODO: we might add something nice to expose the status of a
   ## currently running packet.
   expect_error(outpack::outpack_packet_end(),
-               "No current packet")
+               "No currently active packet")
 
   ## TODO: Still need something much nicer in outpack for this:
   root <- orderly_root(path, FALSE)
@@ -183,7 +183,8 @@ test_that("can fail with informative error if dependency not found", {
 
 test_that("can use global resources", {
   path <- test_prepare_orderly_example("global")
-  id <- orderly_run("global", root = path)
+  env <- new.env()
+  id <- orderly_run("global", envir = env, root = path)
 
   ## File copied and renamed
   path_dst <- file.path(path, "archive", "global", id, "global_data.csv")

@@ -56,14 +56,44 @@
 ##'
 ##' @return The id of the newly created report
 ##' @export
-orderly_run <- function(name, parameters = NULL, envir = NULL,
+orderly_run <- function(name, parameters = NULL, envir = NULL, echo = FALSE,
                         root = NULL, locate = TRUE) {
-  orderly_run_internal(name, parameters, envir, root, locate, develop = FALSE)
+  res <- orderly_prepare(name, parameters, envir, root, locate,
+                         develop = FALSE)
+
+  packet <- res$packet
+  dat <- res$dat
+  envir <- res$envir
+
+  ## TODO: if run fails we might not close out the device stack
+  ## here, we do need to do that to make things easy for the user.
+  ##
+  ## TODO: we should check the stack ideally around the sourcing of
+  ## setup code, but I don't think that we do that in orderly1...
+  withCallingHandlers({
+    for (p in dat$packages) {
+      library(p, character.only = TRUE)
+    }
+    withr::with_dir(packet$path, {
+      for (s in dat$sources) {
+        sys.source(s, envir = envir)
+      }
+    })
+    outpack::outpack_packet_run(dat$script, envir, echo = echo, packet = packet)
+    files <- outpack::outpack_packet_file_list(packet = packet)
+    expected <- unlist(lapply(dat$artefacts, "[[", "filenames"), FALSE, FALSE)
+    check_produced_files(packet$path, expected, files)
+    outpack::outpack_packet_end(packet = packet)
+    unlink(packet$path, recursive = TRUE)
+  }, error = function(e) {
+    ## Eventually fail nicely here with mrc-3379
+    outpack::outpack_packet_cancel(packet = packet)
+  })
+  packet$id
 }
 
 
-orderly_run_internal <- function(name, parameters, envir,
-                                 root, locate, develop) {
+orderly_prepare <- function(name, parameters, envir, root, locate, develop) {
   root <- orderly_root(root, locate)
 
   src <- file.path(root$path, "src", name)
@@ -88,9 +118,16 @@ orderly_run_internal <- function(name, parameters, envir,
     fs::dir_create(path)
   }
 
-  fs::dir_create(file.path(path, dirname(inputs)))
-  ## TODO: I don't think this copes with things within directories?
-  fs::file_copy(file.path(src, inputs), path)
+  if (develop) {
+    ## Here, we should warn if inputs are not present; we can't copy
+    ## any of these as the source and destination is the same
+    ## though. We don't have the general logging suport yet though
+    ## where this might be useful.
+  } else {
+    ## TODO: I don't think this copes with things within directories?
+    fs::dir_create(file.path(path, dirname(inputs)))
+    fs::file_copy(file.path(src, inputs), path)
+  }
 
   if (!is.null(dat$global_resources)) {
     fs::dir_create(file.path(path, dirname(dat$global_resources$here)))
@@ -105,50 +142,35 @@ orderly_run_internal <- function(name, parameters, envir,
   schema <- custom_metadata_schema(root$config)
 
   withCallingHandlers({
-    outpack::outpack_packet_start(path, name, parameters = parameters,
-                                  id = id, root = root$outpack)
+    packet <- outpack::outpack_packet_start(path, name, parameters = parameters,
+                                            id = id, local = TRUE,
+                                            root = root$outpack)
     if (!is.null(parameters)) {
       list2env(parameters, envir)
     }
-    outpack::outpack_packet_file_mark(inputs, "immutable")
+    outpack::outpack_packet_file_mark(inputs, "immutable", packet = packet)
 
+    ## NOTE: This requires that we serialise the environment for
+    ## bundling.
     for (p in plugins) {
       custom_metadata$plugins[[p]] <-
         root$config$plugins[[p]]$run(dat[[p]], root, parameters, envir, path)
     }
 
     outpack::outpack_packet_add_custom("orderly", to_json(custom_metadata),
-                                       schema)
+                                       schema, packet = packet)
 
-    for (p in dat$packages) {
-      library(p, character.only = TRUE)
-    }
-    withr::with_dir(path, {
-      for (s in dat$sources) {
-        sys.source(s, envir = envir)
-      }
-    })
     for (i in seq_len(NROW(dat$depends))) {
       outpack::outpack_packet_use_dependency(dat$depends$id[[i]],
-                                             dat$depends$files[[i]])
-    }
-
-    if (develop) {
-      outpack::outpack_packet_cancel()
-    } else {
-      ## TODO: if run fails we might not close out the device stack
-      ## here, we do need to do that to make things easy for the user.
-      outpack::outpack_packet_run(dat$script, envir)
-      check_produced_files(path, expected, outpack::outpack_packet_file_list())
-      outpack::outpack_packet_end()
-      unlink(path, recursive = TRUE)
+                                             dat$depends$files[[i]],
+                                             packet = packet)
     }
   }, error = function(e) {
     ## Eventually fail nicely here with mrc-3379
-    outpack::outpack_packet_cancel()
+    outpack::outpack_packet_cancel(packet = packet)
   })
 
-  id
+  list(packet = packet, dat = dat, envir = envir)
 }
 
 

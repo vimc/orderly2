@@ -16,7 +16,7 @@ Imports:
     fs,
     jsonlite,
     orderly,
-    outpack (>= 0.1.5),
+    outpack (>= 0.2.3),
     yaml
 Suggests:
     DBI,
