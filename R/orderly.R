@@ -121,6 +121,10 @@ orderly_run <- function(name, parameters = NULL, envir = NULL,
       outpack::outpack_packet_use_dependency(dat$depends$id[[i]],
                                              dat$depends$files[[i]])
     }
+    packet <- outpack::outpack_packet_current()
+    lapply(packet$depends, function(dependency) {
+      expected <- c(expected, dependency$files$here)
+    })
 
     ## TODO: if run fails we might not close out the device stack
     ## here, we do need to do that to make things easy for the user.
