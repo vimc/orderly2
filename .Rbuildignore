@@ -22,3 +22,5 @@
 ^\.github$
 \.*gcov$
 ^TODO\.md$
+^.*\.Rproj$
+^\.Rproj\.user$

@@ -61,7 +61,7 @@ test_that("Check that required files are produced", {
   ## TODO: we might add something nice to expose the status of a
   ## currently running packet.
   expect_error(outpack::outpack_packet_end(),
-               "No current packet")
+               "No currently active packet")
 
   ## TODO: Still need something much nicer in outpack for this:
   root <- orderly_root(path, FALSE)
@@ -206,4 +206,24 @@ test_that("can use global resources", {
   expect_equal(meta$custom$orderly$global,
                list(list(here = "global_data.csv",
                          there = "data.csv")))
+})
+
+
+test_that("dependencies left in archive do not print extra files message", {
+  path <- test_prepare_orderly_example(NULL)
+  create_random_report(path, "a")
+  create_random_report(path, "b", list(a = "latest"))
+
+  id_a <- orderly_run("a", root = path)
+  expect_message(id_b <- orderly_run("b", root = path), NULL)
+
+  root <- orderly_root(path, FALSE)
+  meta <- root$outpack$metadata(id_b, full = TRUE)
+  expect_equal(meta$depends$packet, id_a)
+  expect_equal(meta$depends$files[[1]],
+               data_frame(here = "input.rds", there = "data.rds"))
+  expect_true(file.exists(
+    file.path(path, "archive", "b", id_b, "input.rds")))
+  expect_true(file.exists(
+    file.path(path, "archive", "b", id_b, "data.rds")))
 })
