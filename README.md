@@ -1,5 +1,7 @@
 # orderly2
 
+See [`mrc-ide/orderly2`](https://github.com/mrc-ide/orderly2) for the current version of this package; this version now archived for our internal reference.
+
 <!-- badges: start -->
 [![Project Status: Concept – Minimal or no implementation has been done yet, or the repository is only intended to be a limited example, demo, or proof-of-concept.](https://www.repostatus.org/badges/latest/concept.svg)](https://www.repostatus.org/#concept)
 [![R-CMD-check](https://github.com/vimc/orderly2/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vimc/orderly2/actions/workflows/R-CMD-check.yaml)
